@@ -168,8 +168,38 @@ body {
 }
 .lock-toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
 .lock-hint { font-size: .78rem; color: var(--text2); margin: .4rem .25rem .25rem; }
+.modal-narrow { max-width: 340px; text-align: center; }
+.age-help { font-size: .88rem; color: var(--text2); line-height: 1.5; margin-bottom: 1.25rem; }
+.age-stepper { display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 1.5rem; }
+.age-btn {
+  width: 52px; height: 52px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--surface);
+  font-size: 1.6rem; font-weight: 700; color: var(--accent); cursor: pointer;
+  font-family: 'Nunito', sans-serif; line-height: 1; transition: border-color .12s, background .12s;
+}
+.age-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.age-value { display: flex; flex-direction: column; min-width: 90px; }
+.age-value #age-number { font-size: 2.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+.age-unit { font-size: .8rem; color: var(--text2); font-weight: 600; }
+.age-confirm { width: 100%; }
+.break-note {
+  background: var(--green-light); border: 2px solid var(--green);
+  border-radius: var(--radius); padding: .9rem 1.1rem; margin-bottom: .6rem;
+  font-size: .95rem; font-weight: 600; color: #15803d; line-height: 1.5;
+}
 
 /* finger reminder */
+.position-hint {
+  background: var(--amber-light);
+  border-left: 4px solid var(--amber);
+  border-radius: var(--radius-sm);
+  padding: .6rem .9rem;
+  margin-bottom: .6rem;
+  font-size: .9rem;
+  font-weight: 600;
+  color: #8a5a00;
+  line-height: 1.45;
+}
 .finger-reminder {
   border-radius: var(--radius);
   padding: .9rem 1.1rem;
@@ -311,6 +341,7 @@ body {
     <button class="level-badge" id="level-badge" onclick="openLevelPicker()"></button>
   </div>
   <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="position-hint" id="position-hint"></div>
   <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span></div>
   <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
   <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
@@ -521,12 +552,16 @@ let totalStars = 0;
 let currentPrompt = '';
 let startTime = null;
 let exerciseActive = false;
-let settings = { lockLevels: true };
+let settings = { lockLevels: true, breakReminders: true };
 // Keystroke-level accuracy: every forward keystroke is counted, and a wrong one
 // counts against accuracy even if later corrected with backspace.
 let keystrokes = 0;     // total forward character entries this exercise
 let keyErrors = 0;      // how many of those were wrong at the moment typed
 let prevTypedLen = 0;   // to distinguish forward typing from backspacing
+// Age-based break timer
+let currentBirthYear = null;  // birth year of the active character (for break timing)
+let sessionStart = 0;         // when the current practice session began
+let nextBreakAt = Infinity;   // timestamp at which to next suggest a break
 
 // ── AUDIO ──────────────────────────────────────────────────────────────────────
 let audioCtx = null;
@@ -571,10 +606,11 @@ function loadState(id) {
       level: parsed.level || 0,
       completed: completed,
       stars: parsed.stars || 0,
-      exercises: parsed.exercises || 0
+      exercises: parsed.exercises || 0,
+      birthYear: parsed.birthYear || null   // for the age-based break timer
     };
   }
-  catch(e) { return {level:0,completed:[],stars:0,exercises:0}; }
+  catch(e) { return {level:0,completed:[],stars:0,exercises:0,birthYear:null}; }
 }
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
@@ -585,8 +621,11 @@ function loadSettings() {
   try {
     const s = localStorage.getItem('tt2_settings');
     const parsed = s ? JSON.parse(s) : {};
-    return { lockLevels: parsed.lockLevels !== false }; // default true
-  } catch(e) { return { lockLevels: true }; }
+    return {
+      lockLevels: parsed.lockLevels !== false,        // default true
+      breakReminders: parsed.breakReminders !== false // default true
+    };
+  } catch(e) { return { lockLevels: true, breakReminders: true }; }
 }
 function saveSettings(s) {
   try { localStorage.setItem('tt2_settings', JSON.stringify(s)); } catch(e){}
@@ -642,15 +681,54 @@ function goBack() {
 function startLesson() {
   if (!currentChar) return;
   const s = loadState(currentChar);
+  settings = loadSettings();
+  // First time on a new character: ask for age so the break timer can adapt.
+  if (s.birthYear == null) {
+    openAgeModal();
+    return;
+  }
+  enterLesson(s);
+}
+
+// Actually begin the practice session (called after age is known).
+function enterLesson(s) {
   levelIndex = s.level;
   completedLevels = new Set(s.completed);
   totalStars = s.stars;
   exercisesDoneThisLevel = s.exercises || 0;
-  settings = loadSettings();
+  currentBirthYear = s.birthYear;
+  beginSessionTimer();
   document.getElementById('pick-screen').classList.remove('active');
   document.getElementById('lesson-screen').classList.add('active');
   showExercise();
   document.getElementById('typing-input').focus();
+}
+
+// ── BREAK TIMER ────────────────────────────────────────────────────────────────
+// Suggested minutes of practice before a break, by age. Younger children tire
+// (and accumulate errors) faster, so their sessions are shorter.
+function breakMinutesForAge(age) {
+  if (age == null) return 15;
+  if (age < 8) return 5;
+  if (age <= 11) return 10;
+  return 15;
+}
+function currentAge() {
+  if (currentBirthYear == null) return null;
+  return new Date().getFullYear() - currentBirthYear;
+}
+function beginSessionTimer() {
+  sessionStart = Date.now();
+  const mins = breakMinutesForAge(currentAge());
+  nextBreakAt = settings.breakReminders ? sessionStart + mins * 60000 : Infinity;
+}
+// Called at exercise boundaries (a natural, non-interrupting moment).
+function maybeSuggestBreak() {
+  if (!settings.breakReminders) return false;
+  if (Date.now() < nextBreakAt) return false;
+  const mins = breakMinutesForAge(currentAge());
+  nextBreakAt = Date.now() + mins * 60000; // re-arm for the next interval
+  return true;
 }
 
 // ── LESSON LOGIC ───────────────────────────────────────────────────────────────
@@ -760,31 +838,73 @@ function renderPrompt(typed) {
   }).join('');
 }
 
-// ── FINGER REMINDER ────────────────────────────────────────────────────────────
+// ── FINGER REMINDER & COACHING ─────────────────────────────────────────────────
+// Friendly spoken name for a key (used in coaching sentences).
+function keyName(ch) {
+  if (ch === ' ') return 'the space bar';
+  if (ch === ';') return 'the semicolon key';
+  if (ch === ',') return 'the comma key';
+  if (ch === '.') return 'the period key';
+  if (ch === "'") return 'the apostrophe key';
+  if (ch === '/') return 'the slash key';
+  return ch.toUpperCase();
+}
+
+// Which named group a level index belongs to.
+function groupOf(li) {
+  const g = LEVEL_GROUPS.find(g => li >= g.start && li <= g.end);
+  return g ? g.label : '';
+}
+
 function renderFingerReminder(nextChar, lv, li) {
-  const el = document.getElementById('finger-reminder');
+  const el  = document.getElementById('finger-reminder');
   const dot = document.getElementById('reminder-dot');
   const txt = document.getElementById('reminder-text');
-  const ch = nextChar && nextChar !== ' ' ? nextChar.toLowerCase() : null;
+  const posEl = document.getElementById('position-hint');
+
+  const raw = nextChar || '';
+  const isCapital = raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
+  const ch = raw.length === 1 ? raw.toLowerCase() : null;
   const info = ch ? KEY_INFO[ch] : null;
 
-  const isLarge = li <= 3;
-  const isSmall = li >= 8;
-  el.className = 'finger-reminder' + (isLarge?' large':isSmall?' small':'');
+  // Larger, more prominent coaching on the early home-row levels; smaller later.
+  const inHomeGroup = groupOf(li) === 'Home row';
+  const isLarge = inHomeGroup;
+  const isSmall = li >= 13;   // by the bottom-row group, keep it subtle
+  el.className = 'finger-reminder' + (isLarge ? ' large' : isSmall ? ' small' : '');
+
+  // Positioning hint — shown only while learning the home row, where it matters most.
+  if (inHomeGroup) {
+    posEl.style.display = '';
+    posEl.textContent = (li === 0)
+      ? 'Place your left index finger on F and your right index finger on J. Feel the little bumps that mark the home keys.'
+      : 'Rest your fingers on the home row: A S D F (left hand) and J K L ; (right hand). Feel the bumps on F and J.';
+  } else {
+    posEl.style.display = 'none';
+  }
 
   if (info) {
     const fc = FINGER_COLORS[info.finger];
     const fname = FINGER_NAMES[info.finger];
-    const hname = info.hand === 'L' ? 'left' : 'right';
+    const hand = info.hand === 'L' ? 'left' : 'right';
     dot.style.background = fc;
     el.style.background = fc + '18';
     el.style.borderLeft = '4px solid ' + fc;
-    txt.textContent = `${ch.toUpperCase()} → ${hname} ${fname}`;
+
+    if (ch === ' ') {
+      txt.textContent = 'Press the space bar with your thumb.';
+    } else if (isCapital) {
+      // Capital: hold Shift with the opposite hand, tap the letter with its finger.
+      const shiftHand = info.hand === 'L' ? 'right' : 'left';
+      txt.textContent = `Hold Shift with your ${shiftHand} pinky, then press ${raw} with your ${hand} ${fname}.`;
+    } else {
+      txt.textContent = `Use your ${hand} ${fname} to press ${keyName(ch)}.`;
+    }
   } else {
     dot.style.background = '#ccc';
     el.style.background = 'var(--surface2)';
     el.style.borderLeft = '4px solid var(--border)';
-    txt.textContent = li <= 3 ? 'Keep your fingers on the home row!' : lv.label;
+    txt.textContent = inHomeGroup ? 'Keep your fingers on the home row!' : lv.label;
   }
 }
 
@@ -1008,14 +1128,25 @@ function completeExercise(typed) {
     level: levelIndex,
     completed: Array.from(completedLevels),
     stars: totalStars,
-    exercises: exercisesDoneThisLevel
+    exercises: exercisesDoneThisLevel,
+    birthYear: currentBirthYear
   });
 
   const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
   const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
   const wpmNote = li >= WPM_SHOW_FROM ? ` · ${wpm} WPM` : '';
   const levelNote = levelUp ? ' 🎉 Level up!' : '';
+
+  // At this natural stopping point, gently suggest a break if it's time.
+  const breakNow = maybeSuggestBreak();
+  const breakHtml = breakNow ? `
+    <div class="break-note">
+      🌿 You've been typing for about ${breakMinutesForAge(currentAge())} minutes.
+      It's a good time to rest your hands and eyes for a moment. Come back whenever you're ready!
+    </div>` : '';
+
   document.getElementById('result-area').innerHTML = `
+    ${breakHtml}
     <div class="result-box">
       <div class="result-stars">${starStr}</div>
       <div class="result-text">
@@ -1027,6 +1158,47 @@ function completeExercise(typed) {
         <button class="btn" onclick="goBack()">← Back</button>
       </div>
     </div>`;
+}
+
+// ── AGE MODAL (first time on a character) ───────────────────────────────────────
+let pendingAge = 8; // working value while the modal is open
+
+function openAgeModal() {
+  pendingAge = 8;
+  const animal = ANIMALS.find(a => a.id === currentChar);
+  renderAgeModal(animal);
+}
+function renderAgeModal(animal) {
+  document.getElementById('modal-mount').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeAgeModal()">
+      <div class="modal modal-narrow">
+        <div class="modal-header">
+          <div class="modal-title">${animal.emoji} How old are you?</div>
+        </div>
+        <p class="age-help">This just helps ${animal.name} know when to suggest a little break. You only set it once.</p>
+        <div class="age-stepper">
+          <button class="age-btn" onclick="changeAge(-1)" aria-label="Younger">−</button>
+          <div class="age-value"><span id="age-number">${pendingAge}</span><span class="age-unit">years</span></div>
+          <button class="age-btn" onclick="changeAge(1)" aria-label="Older">+</button>
+        </div>
+        <button class="btn primary age-confirm" onclick="confirmAge()">Start!</button>
+      </div>
+    </div>`;
+}
+function changeAge(delta) {
+  pendingAge = Math.max(4, Math.min(18, pendingAge + delta));
+  document.getElementById('age-number').textContent = pendingAge;
+}
+function confirmAge() {
+  const s = loadState(currentChar);
+  s.birthYear = new Date().getFullYear() - pendingAge;
+  saveState(currentChar, s);
+  document.getElementById('modal-mount').innerHTML = '';
+  enterLesson(loadState(currentChar));
+}
+function closeAgeModal() {
+  // Cancelling returns to character select (we can't start without an age).
+  document.getElementById('modal-mount').innerHTML = '';
 }
 
 function nextExercise() {
@@ -1077,6 +1249,13 @@ function openLevelPicker() {
         <div class="lock-hint">${settings.lockLevels
           ? 'Turn this off to let the student jump to any level.'
           : 'Locking is off — any level can be selected.'}</div>
+        <label class="lock-toggle" style="margin-top:.5rem">
+          <input type="checkbox" id="break-toggle" ${settings.breakReminders ? 'checked' : ''} onchange="toggleBreakReminders(this.checked)">
+          <span>Break reminders — suggest a rest after a while</span>
+        </label>
+        <div class="lock-hint">${settings.breakReminders
+          ? 'Break timing adapts to the student\u2019s age (about 5\u201315 minutes).'
+          : 'Break reminders are off.'}</div>
         ${groupsHtml}
       </div>
     </div>`;
@@ -1086,6 +1265,19 @@ function toggleLockLevels(on) {
   settings.lockLevels = on;
   saveSettings(settings);
   openLevelPicker(); // re-render so lock/unlock states update live
+}
+
+function toggleBreakReminders(on) {
+  settings.breakReminders = on;
+  saveSettings(settings);
+  // Re-arm (or disable) the timer for the current session immediately.
+  if (on) {
+    const mins = breakMinutesForAge(currentAge());
+    nextBreakAt = Date.now() + mins * 60000;
+  } else {
+    nextBreakAt = Infinity;
+  }
+  openLevelPicker();
 }
 
 function closeLevelPicker() {
@@ -1102,7 +1294,8 @@ function jumpToLevel(i) {
     level: levelIndex,
     completed: Array.from(completedLevels),
     stars: totalStars,
-    exercises: exercisesDoneThisLevel
+    exercises: exercisesDoneThisLevel,
+    birthYear: currentBirthYear
   });
   closeLevelPicker();
   showExercise();
