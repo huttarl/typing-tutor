@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Typing Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Nunito+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdf8f2;
+  --surface: #ffffff;
+  --surface2: #f5efe6;
+  --border: #e8ddd0;
+  --text: #2d2418;
+  --text2: #7a6a58;
+  --text3: #b5a696;
+  --accent: #6c63ff;
+  --accent-light: #ede9ff;
+  --green: #22c55e;
+  --green-light: #dcfce7;
+  --red: #ef4444;
+  --red-light: #fee2e2;
+  --amber: #f59e0b;
+  --amber-light: #fef3c7;
+  --finger0: #6c63ff; /* pinky */
+  --finger1: #e85d9e; /* ring */
+  --finger2: #f59e0b; /* middle */
+  --finger3: #22c55e; /* index */
+  --thumb: #64b5f6;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.screen { display: none; }
+.screen.active { display: block; }
+
+/* ── PICK SCREEN ── */
+#pick-screen { padding: 2rem 1.5rem; max-width: 560px; margin: 0 auto; }
+.pick-title { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: .25rem; }
+.pick-sub { text-align: center; color: var(--text2); margin-bottom: 2rem; font-size: 1rem; }
+.avatar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+.avatar-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem .75rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, transform .12s, box-shadow .15s;
+}
+.avatar-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px #6c63ff22; }
+.avatar-card.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 4px 20px #6c63ff33; }
+/* Characters with saved progress get a thin green border + corner dot so the
+   unused ones are visually distinct. .selected still overrides the border. */
+.avatar-card.has-progress { border-color: var(--green); position: relative; }
+.avatar-card.has-progress::after {
+  content: ''; position: absolute; top: 8px; right: 8px;
+  width: 9px; height: 9px; border-radius: 50%; background: var(--green);
+}
+.avatar-card.has-progress .avatar-progress { color: var(--green); font-weight: 700; }
+.avatar-card.selected.has-progress { border-color: var(--accent); }
+.avatar-card svg { display: block; margin: 0 auto 8px; }
+.avatar-name { font-weight: 700; font-size: .95rem; }
+.avatar-progress { font-size: .75rem; color: var(--text2); margin-top: 3px; }
+.start-btn {
+  display: block; width: 100%;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius);
+  padding: .9rem; font-size: 1.1rem; font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer; transition: background .15s, transform .1s;
+}
+.start-btn:hover { background: #574fd6; }
+.start-btn:active { transform: scale(.98); }
+.start-btn:disabled { background: var(--border); color: var(--text3); cursor: default; }
+
+/* ── LESSON SCREEN ── */
+#lesson-screen { max-width: 700px; margin: 0 auto; padding: 1.25rem 1.25rem 2rem; }
+.lesson-topbar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 1.25rem;
+}
+.back-btn {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: .4rem .75rem;
+  font-family: 'Nunito', sans-serif; font-size: .85rem; font-weight: 600;
+  color: var(--text2); cursor: pointer; transition: border-color .12s;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.lesson-title { font-size: 1.1rem; font-weight: 700; flex: 1; }
+.level-badge {
+  background: var(--accent-light); color: var(--accent);
+  border-radius: 99px; padding: .3rem .85rem;
+  font-size: .8rem; font-weight: 700; white-space: nowrap;
+  cursor: pointer; border: none; font-family: 'Nunito', sans-serif;
+  display: inline-flex; align-items: center; gap: .35rem;
+  transition: background .12s;
+}
+.level-badge:hover { background: #ddd6ff; }
+.level-badge .caret { font-size: .65rem; opacity: .7; }
+
+/* level picker modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(45,36,24,.45);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2rem 1rem; z-index: 50; overflow-y: auto;
+}
+.modal {
+  background: var(--surface); border-radius: var(--radius);
+  max-width: 480px; width: 100%; padding: 1.25rem 1.25rem 1.5rem;
+  box-shadow: 0 12px 40px rgba(45,36,24,.25);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.modal-title { font-size: 1.2rem; font-weight: 800; }
+.modal-close {
+  background: var(--surface2); border: none; cursor: pointer;
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 1rem; color: var(--text2); font-weight: 700;
+}
+.modal-close:hover { background: var(--border); }
+.lvl-group-label {
+  font-size: .72rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text2);
+  margin: 1rem 0 .5rem;
+}
+.lvl-group-label:first-child { margin-top: 0; }
+.lvl-list { display: flex; flex-direction: column; gap: 4px; }
+.lvl-item {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .5rem .75rem; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--surface);
+  cursor: pointer; text-align: left; width: 100%;
+  font-family: 'Nunito', sans-serif; font-size: .9rem;
+  transition: border-color .12s, background .12s;
+}
+.lvl-item:hover { border-color: var(--accent); background: var(--accent-light); }
+.lvl-item.current { border-color: var(--accent); background: var(--accent-light); }
+.lvl-item.locked { opacity: .5; cursor: not-allowed; }
+.lvl-item.locked:hover { border-color: var(--border); background: var(--surface); }
+.lvl-num {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface2); color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 800;
+}
+.lvl-item.done .lvl-num { background: var(--green-light); color: #15803d; }
+.lvl-item.current .lvl-num { background: var(--accent); color: #fff; }
+.lvl-label { flex: 1; }
+.lvl-status { font-size: .75rem; flex-shrink: 0; }
+.lock-toggle {
+  display: flex; align-items: center; gap: .6rem;
+  font-size: .9rem; font-weight: 700; cursor: pointer;
+  padding: .6rem .75rem; background: var(--surface2);
+  border-radius: var(--radius-sm);
+}
+.lock-toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+.lock-hint { font-size: .78rem; color: var(--text2); margin: .4rem .25rem .25rem; }
+
+/* finger reminder */
+.finger-reminder {
+  border-radius: var(--radius);
+  padding: .9rem 1.1rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  font-size: 1rem;
+  display: flex; align-items: center; gap: .6rem;
+  transition: font-size .3s, padding .3s;
+}
+.finger-reminder.large { font-size: 1.15rem; padding: 1rem 1.25rem; }
+.finger-reminder.small { font-size: .82rem; padding: .5rem .85rem; font-weight: 600; }
+.finger-reminder .dot {
+  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* prompt */
+.prompt-box {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  font-family: 'Nunito Mono', monospace;
+  font-size: 1.5rem;
+  letter-spacing: .12em;
+  line-height: 1.7;
+  min-height: 70px;
+  word-break: break-all;
+  margin-bottom: 1rem;
+}
+.ch { color: var(--text3); }
+.ch.correct { color: var(--green); }
+.ch.wrong { color: var(--red); text-decoration: underline wavy var(--red); }
+.ch.cursor { border-bottom: 3px solid var(--accent); color: var(--text); }
+
+/* hidden input */
+#typing-input {
+  position: absolute; left: -9999px; opacity: 0;
+}
+
+/* stats */
+.stats-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+.stat-card {
+  flex: 1; background: var(--surface2); border-radius: var(--radius-sm);
+  padding: .6rem .75rem; text-align: center;
+}
+.stat-label { font-size: .7rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
+.stat-card.hidden-stat { opacity: 0; pointer-events: none; }
+
+.hands-row { display: flex; gap: 2rem; justify-content: center; }
+
+/* keyboard */
+.kb-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: .5rem; max-width: 100%; overflow-x: auto; }
+.kb-row { display: flex; gap: 4px; flex-wrap: nowrap; }
+.key {
+  height: 34px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 700; color: var(--text2);
+  font-family: 'Nunito Mono', monospace;
+  position: relative; transition: background .15s, border-color .15s, color .15s;
+  flex-shrink: 0;
+}
+.key-mod { font-size: .62rem; color: var(--text3); background: var(--surface2); }
+.key.locked { background: var(--bg); color: var(--text3); border-color: var(--border); opacity: .45; }
+.key.home-row { border-color: #c4b8e8; }
+.key.current {
+  border-width: 2.5px;
+  transform: scale(1.08);
+  box-shadow: 0 2px 10px #0002;
+  z-index: 1;
+}
+.key.correct-flash { background: var(--green-light) !important; border-color: var(--green) !important; }
+.key.wrong-flash { background: var(--red-light) !important; border-color: var(--red) !important; }
+.key[data-finger="0"] { --fcolor: var(--finger0); }
+.key[data-finger="1"] { --fcolor: var(--finger1); }
+.key[data-finger="2"] { --fcolor: var(--finger2); }
+.key[data-finger="3"] { --fcolor: var(--finger3); }
+.key[data-finger="4"] { --fcolor: var(--thumb); }
+.key.home-row { border-color: var(--fcolor, var(--border)); }
+
+/* result */
+.result-box {
+  display: flex; align-items: center; gap: .75rem;
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: .6rem 1rem;
+  margin-top: .5rem; flex-wrap: wrap;
+}
+.result-stars { font-size: 1.3rem; letter-spacing: 2px; flex-shrink: 0; }
+.result-label { font-size: .95rem; font-weight: 700; }
+.result-sub { font-size: .82rem; color: var(--text2); }
+.result-text { display: flex; flex-direction: column; flex: 1; min-width: 120px; }
+.btn-row { display: flex; gap: 8px; flex-shrink: 0; }
+.btn {
+  padding: .6rem 1.4rem; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border); background: var(--surface);
+  font-family: 'Nunito', sans-serif; font-size: .9rem; font-weight: 700;
+  cursor: pointer; transition: border-color .12s, background .12s;
+  color: var(--text);
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn.primary:hover { background: #574fd6; border-color: #574fd6; }
+
+/* progress bar */
+.prog-bg { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 1rem; }
+.prog-fill { background: var(--accent); height: 6px; border-radius: 99px; transition: width .4s; }
+
+/* keyboard legend */
+.kb-legend {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+  font-size: .72rem; color: var(--text2); margin-top: .25rem;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+.save-hint {
+  text-align: center; font-size: .82rem; color: var(--text2);
+  margin-top: .85rem; line-height: 1.5; max-width: 420px;
+  margin-left: auto; margin-right: auto;
+}
+</style>
+</head>
+<body>
+
+<!-- PICK SCREEN -->
+<div id="pick-screen" class="screen active">
+  <h1 class="pick-title">🐾 Typing Tutor</h1>
+  <p class="pick-sub">Who is typing today? Pick your character!</p>
+  <div class="avatar-grid" id="avatar-grid"></div>
+  <button class="start-btn" id="start-btn" disabled onclick="startLesson()">Choose a character to start!</button>
+  <p class="save-hint">Your progress is saved under the character you choose. Each student should pick their own character to keep their progress separate.</p>
+</div>
+
+<!-- LESSON SCREEN -->
+<div id="lesson-screen" class="screen">
+  <div class="lesson-topbar">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div class="lesson-title" id="lesson-title"></div>
+    <button class="level-badge" id="level-badge" onclick="openLevelPicker()"></button>
+  </div>
+  <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span></div>
+  <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
+  <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+  <div class="kb-wrap" id="keyboard"></div>
+  <div class="kb-legend" id="kb-legend"></div>
+  <div class="hands-row" style="margin: .5rem 0 .25rem;">
+    <svg id="hand-left" width="105" height="120" viewBox="0 38 110 130"></svg>
+    <svg id="hand-right" width="105" height="120" viewBox="0 38 110 130" style="transform:scaleX(-1)"></svg>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card" id="stat-acc-card"><div class="stat-label">Accuracy</div><div class="stat-val" id="stat-acc">—</div></div>
+    <div class="stat-card hidden-stat" id="stat-wpm-card"><div class="stat-label">WPM</div><div class="stat-val" id="stat-wpm">—</div></div>
+    <div class="stat-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div></div>
+  </div>
+  <div id="result-area"></div>
+</div>
+
+<div id="modal-mount"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const ANIMALS = [
+  {id:'fox',    name:'Fox',       emoji:'🦊'},
+  {id:'owl',    name:'Owl',       emoji:'🦉'},
+  {id:'rabbit', name:'Rabbit',    emoji:'🐰'},
+  {id:'bear',   name:'Bear',      emoji:'🐻'},
+  {id:'hedgehog',name:'Hedgehog', emoji:'🦔'},
+  {id:'frog',   name:'Frog',      emoji:'🐸'},
+];
+
+// finger: 0=pinky,1=ring,2=middle,3=index (left or right), 4=thumb
+// hand: 'L' or 'R'
+const KEY_INFO = {
+  // top row
+  'q':{hand:'L',finger:0},'w':{hand:'L',finger:1},'e':{hand:'L',finger:2},'r':{hand:'L',finger:3},'t':{hand:'L',finger:3},
+  'y':{hand:'R',finger:3},'u':{hand:'R',finger:3},'i':{hand:'R',finger:2},'o':{hand:'R',finger:1},'p':{hand:'R',finger:0},
+  // home row
+  'a':{hand:'L',finger:0},'s':{hand:'L',finger:1},'d':{hand:'L',finger:2},'f':{hand:'L',finger:3},'g':{hand:'L',finger:3},
+  'h':{hand:'R',finger:3},'j':{hand:'R',finger:3},'k':{hand:'R',finger:2},'l':{hand:'R',finger:1},';':{hand:'R',finger:0},
+  // bottom row  (m is typed with the RIGHT INDEX finger in standard touch typing)
+  'z':{hand:'L',finger:0},'x':{hand:'L',finger:1},'c':{hand:'L',finger:2},'v':{hand:'L',finger:3},'b':{hand:'L',finger:3},
+  'n':{hand:'R',finger:3},'m':{hand:'R',finger:3},',':{hand:'R',finger:2},'.':{hand:'R',finger:1},'/':{hand:'R',finger:0},
+  "'":{hand:'R',finger:0},
+  ' ':{hand:'R',finger:4},
+};
+
+// Cumulative key sets, built up as the course progresses. Using helpers keeps
+// the LEVELS table readable and avoids copy-paste drift.
+const K_HOME    = ['f','j','d','k','s','l','a',';','g','h'];                  // full home row (incl. g,h stretch)
+const K_TOP     = K_HOME.concat(['e','i','r','u','t','y','w','o','q','p']);   // + full top row
+const K_BOTTOM  = K_TOP.concat(['c','m','v','n','b','x','z']);               // + full bottom row letters
+const K_PUNCT   = K_BOTTOM.concat([',','.']);                                // + comma, period (used in sentences)
+
+// Levels: key-learning levels add 1-2 keys; each group ends with real-word
+// review level(s) using a curated list limited to the letters learned so far.
+const LEVELS = [
+  // ── Home row group (a s d f g h j k l ;) ──
+  {keys:['f','j'],                          label:'F and J — index fingers, home row',      wordLevel:false},
+  {keys:['f','j','d','k'],                  label:'Add D and K — middle fingers',           wordLevel:false},
+  {keys:['f','j','d','k','s','l'],          label:'Add S and L — ring fingers',             wordLevel:false},
+  {keys:['f','j','d','k','s','l','a',';'],  label:'Add A and ; — pinky fingers',            wordLevel:false},
+  {keys:['f','j','d','k','s','l','a',';','g','h'], label:'Add G and H — index stretch (full home row!)', wordLevel:false},
+  {keys:K_HOME, label:'Home row words', wordLevel:true, wordKey:'home'},
+
+  // ── Top row group (q w e r t y u i o p) ──
+  {keys:K_HOME.concat(['e','i']),                         label:'Add E and I — middle fingers, top row', wordLevel:false},
+  {keys:K_HOME.concat(['e','i','r','u']),                 label:'Add R and U — index fingers, top row',  wordLevel:false},
+  {keys:K_HOME.concat(['e','i','r','u','t','y']),         label:'Add T and Y — index stretch, top row',  wordLevel:false},
+  {keys:K_HOME.concat(['e','i','r','u','t','y','w','o']), label:'Add W and O — ring fingers, top row',   wordLevel:false},
+  {keys:K_TOP,                                            label:'Add Q and P — pinky fingers (full top row!)', wordLevel:false},
+  {keys:K_TOP, label:'Top row words', wordLevel:true, wordKey:'topOnly'},
+  {keys:K_TOP, label:'Top + home row words', wordLevel:true, wordKey:'topHome'},
+
+  // ── Bottom row group (z x c v b n m) ──
+  {keys:K_TOP.concat(['v','n']),                 label:'Add V and N — index fingers, bottom row', wordLevel:false},
+  {keys:K_TOP.concat(['v','n','c','m']),         label:'Add C and M — middle finger / index',     wordLevel:false},
+  {keys:K_TOP.concat(['v','n','c','m','b']),     label:'Add B — left index stretch',              wordLevel:false},
+  {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)', wordLevel:false},
+  {keys:K_BOTTOM, label:'Bottom + home row words', wordLevel:true, wordKey:'bottomHome'},
+
+  // ── Real words (mixed, from the full bank) ──
+  {keys:K_PUNCT, label:'Real words from great books', wordLevel:true},
+
+  // ── Real sentences (shortest → longest) ──
+  {keys:K_PUNCT, label:'Short real sentences', wordLevel:true, sentenceLevel:true},
+  {keys:K_PUNCT, label:'Longer sentences — building speed', wordLevel:true, sentenceLevel:true, showWpm:true},
+  {keys:K_PUNCT, label:'Sentences — speed and accuracy', wordLevel:true, sentenceLevel:true, showWpm:true, wpmStars:true},
+];
+
+// Pre-generated word lists, restricted to the letters learned by that level.
+const GROUP_WORDS = {
+  home: ['as','ask','add','all','fall','dad','sad','lad','lass','flask','salad','glad','gash','flash','lash','dash',
+         'half','shall','hall','gall','slag','flags','glass','salads','flasks','asks','falls','halls'],
+  // top row only (q w e r t y u i o p)
+  topOnly: ['type','tree','true','your','tour','pour','quit','quiet','quote','rope','tier','tip','top','trip','trio',
+            'wire','put','pet','pit','pop','riot','ripe','rite','write','wrote','wept','weep','peer','pier','poet',
+            'poetry','outer','utter','pretty','prior','tower','wiry'],
+  // top row + home row
+  topHome: ['the','there','their','three','tree','free','feet','dear','idea','great','heart','first','this','that',
+            'sister','father','rather','either','tiger','street','those','these','through','thought','people','letter',
+            'together','power','water','daughter','laughter','toward','grow','show','south','house','horse'],
+  // bottom row + home row (bottom-row-only words are impossible)
+  bottomHome: ['and','hand','land','band','sand','man','can','dance','glance','balance','add','dad','lad','sad','bad',
+               'mad','had','ban','van','flan','clan','scan','blank','black','bland','gland','calm','clam','flag',
+               'slack','snack','salad','almanac'],
+  // all letters
+  all: ['now','how','who','two','word','work','world','power','quick','quiet','people','pretty','proper','queen','box',
+        'wax','zip','zebra','prize','zone','wizard','expert','wonder','question','explain','example','enjoy','puzzle',
+        'jacket','oxen','realize','organize','wonderful','marquis']
+};
+
+// Sentence levels occupy the final group. WPM is shown from the 2nd sentence
+// level and counted toward stars on the 3rd (last). Derived from the table so
+// they stay correct if levels are reordered.
+const SENT_LEVEL_FIRST = LEVELS.findIndex(l => l.sentenceLevel);
+const WPM_SHOW_FROM  = LEVELS.findIndex(l => l.showWpm);
+const WPM_STARS_FROM = LEVELS.findIndex(l => l.wpmStars);
+
+// Level groups for the picker (start index inclusive, end index inclusive).
+const LEVEL_GROUPS = [
+  {label: 'Home row',       start: 0,  end: 5},
+  {label: 'Top row',        start: 6,  end: 12},
+  {label: 'Bottom row',     start: 13, end: 17},
+  {label: 'Real words',     start: 18, end: 18},
+  {label: 'Real sentences', start: 19, end: 21},
+];
+
+// Large word bank filtered by available keys at use time
+const WORD_BANK = [
+  'the','of','and','a','to','in','was','he','she','had','her','that',
+  'it','his','is','with','as','for','on','not','but','be','at','by',
+  'an','which','have','from','said','were','all','been','very','their',
+  'so','this','more','would','could','my','one','what','they','them',
+  'up','when','no','out','do','if','there','about','time','into','then',
+  'than','how','any','its','now','here','who','yet','some','great',
+  'little','over','like','him','upon','such','other','made','again',
+  'come','each','also','our','first','own','never','after','every',
+  'much','well','before','did','where','same','know','may','young',
+  'dear','long','even','though','us','most','might','those','only',
+  'good','old','your','we','has','these','just','man','two','himself',
+  'think','too','am','under','without','day','many','next','quite',
+  'thought','find','you','away','head','went','make','felt','look',
+  'house','saw','let','seemed','eyes','face','against','down','back',
+  'moment','perhaps','tell','nothing','fine','sure','kind','mind',
+  'heart','life','time','place','world','hand','name','home','work',
+  'friend','father','mother','sister','brother','children','husband',
+  'always','never','often','still','soon','once','away','quite',
+  'between','without','through','nothing','something','everything',
+  'indeed','replied','however','whether','another','together','perhaps',
+  'general','morning','evening','moment','manner','matter','family',
+  'feeling','herself','himself','herself','whatever','certainly',
+  'understood','immediately','particularly','unfortunately','fortunately',
+  'mr','mrs','miss','said','asked','answered','exclaimed','continued',
+  'elizabeth','darcy','jane','bingley','wickham','bennet','collins',
+  'oliver','pip','esther','jarndyce','scrooge','copperfield',
+];
+
+// Complete sentences from Austen, Dickens, and the Bible (World English Bible,
+// public domain, modern English). All are full sentences, and the list is kept
+// pre-sorted shortest → longest so sentence practice ramps up gradually.
+// (Psalm/divine-name verses use the conventional "the Lord" rendering for
+// familiarity rather than WEB's "Yahweh".)
+const SENTENCES = [
+  "Jesus wept.",
+  "God is love.",
+  "God is light.",
+  "Let there be light.",
+  "Oliver asked for more.",
+  "The Lord is my shepherd.",
+  "It was the best of times.",
+  "It was a bright cold day.",
+  "She spoke with great warmth.",
+  "His pride never deserted him.",
+  "There was truth in his looks.",
+  "Be still, and know that I am God.",
+  "A gentle answer turns away wrath.",
+  "A cheerful heart is good medicine.",
+  "He was a man of very large fortune.",
+  "She had a lively playful disposition.",
+  "She was always of service to someone.",
+  "The Lord is my light and my salvation.",
+  "Trust in the Lord with all your heart.",
+  "She was a woman of mean understanding.",
+  "It is a truth universally acknowledged.",
+  "Give thanks to the Lord, for he is good.",
+  "He had a great deal of time on his hands.",
+  "He had not been long in the neighbourhood.",
+  "The evening was not without its satisfaction.",
+  "A large income is the best recipe for happiness.",
+  "Miss Bennet received her summons with great delight.",
+  "She was not without hope that something would turn up.",
+  "There is nothing like staying at home for real comfort.",
+  "In the beginning, God created the heavens and the earth.",
+  "Your word is a lamp to my feet, and a light for my path.",
+  "The gentlemen pronounced him to be a fine figure of a man.",
+  "The power of doing anything with quickness is always prized.",
+  "A woman must have a thorough knowledge of music and singing.",
+  "To be fond of dancing was a certain step towards falling in love.",
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let currentChar = null;
+let levelIndex = 0;
+let completedLevels = new Set();   // indices this character has completed
+let exercisesDoneThisLevel = 0;
+let totalStars = 0;
+let currentPrompt = '';
+let startTime = null;
+let exerciseActive = false;
+let settings = { lockLevels: true };
+// Keystroke-level accuracy: every forward keystroke is counted, and a wrong one
+// counts against accuracy even if later corrected with backspace.
+let keystrokes = 0;     // total forward character entries this exercise
+let keyErrors = 0;      // how many of those were wrong at the moment typed
+let prevTypedLen = 0;   // to distinguish forward typing from backspacing
+
+// ── AUDIO ──────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTick(correct) {
+  try {
+    const ctx = getAudio();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    if (correct) {
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+    } else {
+      o.frequency.value = 220;
+      o.type = 'sawtooth';
+      g.gain.setValueAtTime(0.12, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    }
+    o.start(); o.stop(ctx.currentTime + 0.15);
+  } catch(e){}
+}
+
+// ── STORAGE ──────────────────────────────────────────────────────────────────
+function loadState(id) {
+  try {
+    const s = localStorage.getItem('tt2_'+id);
+    const parsed = s ? JSON.parse(s) : {};
+    let completed = Array.isArray(parsed.completed) ? parsed.completed.slice() : null;
+    // Migrate from older format that only tracked maxLevel: treat all levels
+    // below the furthest reached as completed.
+    if (completed === null) {
+      const max = parsed.maxLevel != null ? parsed.maxLevel : (parsed.level || 0);
+      completed = [];
+      for (let i = 0; i < max; i++) completed.push(i);
+    }
+    return {
+      level: parsed.level || 0,
+      completed: completed,
+      stars: parsed.stars || 0,
+      exercises: parsed.exercises || 0
+    };
+  }
+  catch(e) { return {level:0,completed:[],stars:0,exercises:0}; }
+}
+function saveState(id, s) {
+  try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
+}
+
+// Global settings (shared across characters)
+function loadSettings() {
+  try {
+    const s = localStorage.getItem('tt2_settings');
+    const parsed = s ? JSON.parse(s) : {};
+    return { lockLevels: parsed.lockLevels !== false }; // default true
+  } catch(e) { return { lockLevels: true }; }
+}
+function saveSettings(s) {
+  try { localStorage.setItem('tt2_settings', JSON.stringify(s)); } catch(e){}
+}
+
+// Is a level currently selectable?
+function isLevelUnlocked(i) {
+  if (!settings.lockLevels) return true;
+  if (i === 0) return true;
+  if (completedLevels.has(i)) return true;
+  if (completedLevels.has(i - 1)) return true; // next level after any completed one
+  return false;
+}
+
+// ── AVATAR GRID ───────────────────────────────────────────────────────────────
+function characterHasProgress(s) {
+  return (s.completed && s.completed.length > 0) || s.stars > 0 ||
+         s.level > 0 || (s.exercises || 0) > 0;
+}
+
+function renderAvatarGrid() {
+  const g = document.getElementById('avatar-grid');
+  g.innerHTML = ANIMALS.map(a => {
+    const s = loadState(a.id);
+    const lv = Math.min(s.level, LEVELS.length-1);
+    const hasProgress = characterHasProgress(s);
+    const progressText = hasProgress ? `Level ${lv+1} · ${s.stars}⭐` : 'New — not started';
+    return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')">
+      <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
+      <div class="avatar-name">${a.name}</div>
+      <div class="avatar-progress">${progressText}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectChar(id) {
+  currentChar = id;
+  document.querySelectorAll('.avatar-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('card-'+id).classList.add('selected');
+  const btn = document.getElementById('start-btn');
+  btn.disabled = false;
+  const name = ANIMALS.find(a=>a.id===id).name;
+  const hasProgress = characterHasProgress(loadState(id));
+  btn.textContent = (hasProgress ? 'Continue with ' : 'Start with ') + name + '!';
+}
+
+function goBack() {
+  document.getElementById('lesson-screen').classList.remove('active');
+  document.getElementById('pick-screen').classList.add('active');
+  renderAvatarGrid();
+}
+
+function startLesson() {
+  if (!currentChar) return;
+  const s = loadState(currentChar);
+  levelIndex = s.level;
+  completedLevels = new Set(s.completed);
+  totalStars = s.stars;
+  exercisesDoneThisLevel = s.exercises || 0;
+  settings = loadSettings();
+  document.getElementById('pick-screen').classList.remove('active');
+  document.getElementById('lesson-screen').classList.add('active');
+  showExercise();
+  document.getElementById('typing-input').focus();
+}
+
+// ── LESSON LOGIC ───────────────────────────────────────────────────────────────
+function getLv() { return LEVELS[Math.min(levelIndex, LEVELS.length-1)]; }
+
+function showExercise() {
+  const lv = getLv();
+  const li = Math.min(levelIndex, LEVELS.length-1);
+  const animal = ANIMALS.find(a=>a.id===currentChar);
+
+  document.getElementById('lesson-title').textContent = animal.emoji + ' ' + animal.name;
+  document.getElementById('level-badge').innerHTML = 'Level ' + (li+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
+  document.getElementById('prog-fill').style.width = Math.round((li / LEVELS.length)*100) + '%';
+  document.getElementById('stat-level').textContent = li+1;
+  document.getElementById('stat-acc').textContent = '—';
+  document.getElementById('stat-wpm').textContent = '—';
+
+  // WPM visibility
+  const showWpm = li >= WPM_SHOW_FROM;
+  document.getElementById('stat-wpm-card').classList.toggle('hidden-stat', !showWpm);
+
+  currentPrompt = generatePrompt(lv, li);
+  startTime = null;
+  exerciseActive = true;
+  keystrokes = 0;
+  keyErrors = 0;
+  prevTypedLen = 0;
+
+  const inp = document.getElementById('typing-input');
+  inp.value = '';
+  inp.disabled = false;
+  inp.focus();
+
+  const firstChar = currentPrompt[0] || '';
+  renderPrompt('');
+  renderFingerReminder(firstChar, lv, li);
+  renderKeyboard(lv, li, firstChar);
+  updateHands(firstChar);
+  document.getElementById('result-area').innerHTML = '';
+}
+
+function generatePrompt(lv, li) {
+  const keys = lv.keys.filter(k => /[a-z]/.test(k));
+
+  // ── Sentence levels: progress shortest → longest across the sentence levels ──
+  if (lv.sentenceLevel) {
+    const tierCount = LEVELS.filter(l => l.sentenceLevel).length; // number of sentence levels
+    const tier = Math.min(li - SENT_LEVEL_FIRST, tierCount - 1);  // 0-based tier
+    // SENTENCES is pre-sorted shortest→longest; split into tiers by position.
+    const n = SENTENCES.length;
+    const lo = Math.floor((tier / tierCount) * n);
+    const hi = Math.floor(((tier + 1) / tierCount) * n);
+    const slice = SENTENCES.slice(lo, Math.max(hi, lo + 1));
+    return slice[Math.floor(Math.random() * slice.length)];
+  }
+
+  // ── Group word-review levels: use the pre-generated list for this group ──
+  if (lv.wordKey && GROUP_WORDS[lv.wordKey]) {
+    const list = GROUP_WORDS[lv.wordKey];
+    let words = [], len = 0, target = 22 + Math.floor(Math.random()*12);
+    let attempts = 0;
+    while (len < target && attempts < 200) {
+      attempts++;
+      const w = list[Math.floor(Math.random()*list.length)];
+      if (len + w.length + 1 <= target + 4) { words.push(w); len += w.length + 1; }
+    }
+    if (words.length >= 2) return words.join(' ');
+    return list.slice(0, 4).join(' ');
+  }
+
+  // ── Mixed real-words level: draw from the full bank, filtered to learned keys ──
+  if (lv.wordLevel) {
+    const avail = new Set(keys.concat([' ']));
+    const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c)));
+    if (pool.length >= 3) {
+      let words = [], len = 0, target = 28 + Math.floor(Math.random()*14);
+      let attempts = 0;
+      while (len < target && attempts < 200) {
+        attempts++;
+        const w = pool[Math.floor(Math.random()*pool.length)];
+        if (len + w.length + 1 <= target + 4) { words.push(w); len += w.length + 1; }
+      }
+      if (words.length >= 2) return words.join(' ');
+    }
+  }
+
+  // ── Drill levels: randomized letter/syllable chunks from learned keys ──
+  const hasSpace = li >= 1;
+  const target = 24 + Math.floor(Math.random()*12);
+  let s = '';
+  while (s.replace(/ /g,'').length < target) {
+    const len = 2 + Math.floor(Math.random()*3);
+    const chunk = Array.from({length:len}, ()=>keys[Math.floor(Math.random()*keys.length)]).join('');
+    if (s) s += hasSpace ? ' ' : '';
+    s += chunk;
+  }
+  return s.trim();
+}
+
+function renderPrompt(typed) {
+  const box = document.getElementById('prompt-box');
+  box.innerHTML = currentPrompt.split('').map((ch, i) => {
+    let cls = 'ch';
+    if (i < typed.length) cls += typed[i]===ch ? ' correct' : ' wrong';
+    else if (i === typed.length) cls += ' cursor';
+    return `<span class="${cls}">${ch===' '?'&nbsp;':ch}</span>`;
+  }).join('');
+}
+
+// ── FINGER REMINDER ────────────────────────────────────────────────────────────
+function renderFingerReminder(nextChar, lv, li) {
+  const el = document.getElementById('finger-reminder');
+  const dot = document.getElementById('reminder-dot');
+  const txt = document.getElementById('reminder-text');
+  const ch = nextChar && nextChar !== ' ' ? nextChar.toLowerCase() : null;
+  const info = ch ? KEY_INFO[ch] : null;
+
+  const isLarge = li <= 3;
+  const isSmall = li >= 8;
+  el.className = 'finger-reminder' + (isLarge?' large':isSmall?' small':'');
+
+  if (info) {
+    const fc = FINGER_COLORS[info.finger];
+    const fname = FINGER_NAMES[info.finger];
+    const hname = info.hand === 'L' ? 'left' : 'right';
+    dot.style.background = fc;
+    el.style.background = fc + '18';
+    el.style.borderLeft = '4px solid ' + fc;
+    txt.textContent = `${ch.toUpperCase()} → ${hname} ${fname}`;
+  } else {
+    dot.style.background = '#ccc';
+    el.style.background = 'var(--surface2)';
+    el.style.borderLeft = '4px solid var(--border)';
+    txt.textContent = li <= 3 ? 'Keep your fingers on the home row!' : lv.label;
+  }
+}
+
+// ── HAND SVG ───────────────────────────────────────────────────────────────────
+// Simple cartoon hand: palm + 4 fingers + thumb
+// finger segments: pinky(0), ring(1), middle(2), index(3)
+// For right hand we mirror with CSS scaleX(-1)
+function drawHand(svgId, activeFinger, isActive) {
+  const svg = document.getElementById(svgId);
+  // viewBox: 0 0 110 170
+  // Palm: y=115 to y=162. Fingers grow upward from y=115.
+  // Finger data: x, w, and segment heights (bottom to top).
+  // Total heights: pinky=56, ring=68, middle=76, index=68 — all fit above y=115.
+  // Lowest top: middle reaches y = 115-76 = 39. Safe within viewBox (top margin=5).
+  const palmY = 115;
+  const fingers = [
+    {x: 6,  w: 15, segs: [20, 18, 16]}, // pinky  (0): total 54px → top at y=61
+    {x: 23, w: 16, segs: [26, 22, 18]}, // ring   (1): total 66px → top at y=49
+    {x: 41, w: 17, segs: [30, 26, 18]}, // middle (2): total 74px → top at y=41
+    {x: 60, w: 16, segs: [26, 22, 18]}, // index  (3): total 66px → top at y=49
+  ];
+
+  let html = '';
+  // palm
+  html += `<rect x="4" y="${palmY}" width="82" height="50" rx="12" fill="#f5deb3" stroke="#c8a882" stroke-width="1.5"/>`;
+
+  fingers.forEach((f, fi) => {
+    const active = isActive && fi === activeFinger;
+    const fill   = active ? FINGER_COLORS[fi] : '#f5deb3';
+    const stroke = active ? FINGER_COLORS[fi] : '#c8a882';
+    // Draw segments bottom-to-top: start from palmY, go up
+    let y = palmY;
+    f.segs.forEach((h, si) => {
+      y -= h;
+      const rx = si === f.segs.length - 1 ? 6 : 3; // round top only on topmost segment
+      html += `<rect x="${f.x}" y="${y}" width="${f.w}" height="${h + 1}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+    });
+  });
+
+  // Thumb: rotated rect, positioned to right of palm
+  const thumbActive = isActive && activeFinger === 4;
+  const tf = thumbActive ? FINGER_COLORS[4] : '#f5deb3';
+  const ts = thumbActive ? FINGER_COLORS[4] : '#c8a882';
+  html += `<rect x="80" y="100" width="15" height="36" rx="7" fill="${tf}" stroke="${ts}" stroke-width="1.5" transform="rotate(25 87 118)"/>`;
+
+  svg.innerHTML = html;
+}
+
+function updateHands(nextChar) {
+  const ch = nextChar ? nextChar.toLowerCase() : null;
+  const info = ch && ch !== ' ' ? KEY_INFO[ch] : (ch===' ' ? {hand:'R',finger:4} : null);
+  const leftActive  = info && info.hand==='L';
+  const rightActive = info && info.hand==='R';
+  drawHand('hand-left',  info&&leftActive  ? info.finger : -1, leftActive);
+  drawHand('hand-right', info&&rightActive ? info.finger : -1, rightActive);
+}
+
+// ── KEYBOARD ───────────────────────────────────────────────────────────────────
+// Realistic ANSI layout. Modifier/structural keys are included so the rows
+// stagger correctly (the offsets come from the real key widths, not hacks).
+// Each entry: a letter/char string, or {label, w, mod} for non-typing keys.
+// w is width in "units" (1 unit = one standard key). mod marks non-character keys.
+const KB_ROWS = [
+  ['`','1','2','3','4','5','6','7','8','9','0','-','=',{label:'⌫',w:2,mod:'back'}],
+  [{label:'Tab',w:1.5,mod:'tab'},'q','w','e','r','t','y','u','i','o','p','[',']',{label:'\\',w:1.5}],
+  [{label:'Caps',w:1.75,mod:'caps'},'a','s','d','f','g','h','j','k','l',';',"'",{label:'Enter',w:2.25,mod:'enter'}],
+  [{label:'Shift',w:2.25,mod:'lshift'},'z','x','c','v','b','n','m',',','.','/',{label:'Shift',w:2.75,mod:'rshift'}],
+  [{label:'space',w:10,mod:'space'}],
+];
+const UNIT = 30;   // px per key unit
+const GAP  = 4;    // px gap between keys
+
+function renderKeyboard(lv, li, nextChar) {
+  const unlockedSet = new Set(lv.keys);
+  const homeRow = new Set(['a','s','d','f','g','h','j','k','l',';']);
+  const wrap = document.getElementById('keyboard');
+
+  // Determine the current key + whether Shift is needed (capital letters)
+  const raw = nextChar || '';
+  const needsShift = raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
+  const curLower = raw.toLowerCase();
+  const curInfo = KEY_INFO[curLower];
+  // Use the Shift key on the OPPOSITE hand from the letter being typed.
+  const shiftSide = curInfo ? (curInfo.hand === 'L' ? 'rshift' : 'lshift') : null;
+
+  const rows = KB_ROWS.map(row => {
+    const keys = row.map(k => {
+      if (typeof k === 'object') {
+        // modifier / structural key
+        const w = k.w * UNIT + (k.w - 1) * GAP;
+        const isSpace = k.mod === 'space';
+        const spaceActive = isSpace && nextChar === ' ';
+        const shiftActive = needsShift && k.mod === shiftSide;
+        let style = `width:${w}px`;
+        if (spaceActive) style += `;background:${FINGER_COLORS[4]}22;border-color:${FINGER_COLORS[4]}`;
+        if (shiftActive) style += `;background:${FINGER_COLORS[0]}22;border-color:${FINGER_COLORS[0]}`;
+        const cls = 'key key-mod' + ((spaceActive||shiftActive)?' current':'');
+        return `<div class="${cls}" style="${style}">${k.label}</div>`;
+      }
+      // character key
+      const info = KEY_INFO[k];
+      const fi = info ? info.finger : 0;
+      const locked = !unlockedSet.has(k);
+      const isCurrent = k === curLower && curLower.length === 1;
+      const isHome = homeRow.has(k) && !locked;
+      let cls = 'key' + (locked?' locked':'') + (isCurrent?' current':'') + (isHome?' home-row':'');
+      const fattr = !locked ? `data-finger="${fi}"` : '';
+      const fcolor = !locked ? FINGER_COLORS[fi] : 'var(--border)';
+      const style = `width:${UNIT}px` + (isCurrent ? `;background:${fcolor}22;border-color:${fcolor}` : '');
+      return `<div class="${cls}" ${fattr} style="${style}">${k}</div>`;
+    }).join('');
+    return `<div class="kb-row">${keys}</div>`;
+  }).join('');
+
+  wrap.innerHTML = rows;
+
+  // legend
+  const legend = document.getElementById('kb-legend');
+  legend.innerHTML = FINGER_COLORS.map((c,i)=>
+    `<span class="legend-item"><span class="legend-dot" style="background:${c}"></span>${FINGER_NAMES[i]}</span>`
+  ).join('');
+}
+
+// ── INPUT HANDLING ─────────────────────────────────────────────────────────────
+document.getElementById('typing-input').addEventListener('input', function(e) {
+  if (!exerciseActive) return;
+  const typed = this.value;
+  if (!startTime && typed.length > 0) startTime = Date.now();
+
+  // Count forward keystrokes (length grew). A character that's wrong at the
+  // moment it's typed is counted as an error even if later fixed with backspace.
+  if (typed.length > prevTypedLen) {
+    for (let i = prevTypedLen; i < typed.length; i++) {
+      keystrokes++;
+      const wrong = typed[i] !== currentPrompt[i];
+      if (wrong) keyErrors++;
+      // sound feedback for the newest character
+      if (i === typed.length - 1) playTick(!wrong);
+    }
+  }
+  prevTypedLen = typed.length;
+
+  renderPrompt(typed);
+  updateLiveStats(typed);
+
+  const nextChar = typed.length < currentPrompt.length ? currentPrompt[typed.length] : '';
+  renderFingerReminder(nextChar, getLv(), Math.min(levelIndex, LEVELS.length-1));
+  renderKeyboard(getLv(), Math.min(levelIndex, LEVELS.length-1), nextChar);
+  updateHands(nextChar);
+
+  if (typed.length >= currentPrompt.length) {
+    completeExercise(typed);
+  }
+});
+
+// keep focus on hidden input during active exercise; Enter advances when result shown
+document.addEventListener('keydown', function(e) {
+  const modalOpen = document.getElementById('modal-mount').children.length > 0;
+  if (modalOpen) {
+    if (e.key === 'Escape') closeLevelPicker();
+    return;
+  }
+  if (!document.getElementById('lesson-screen').classList.contains('active')) return;
+  if (!exerciseActive && e.key === 'Enter') {
+    e.preventDefault();
+    nextExercise();
+    return;
+  }
+  if (exerciseActive) {
+    document.getElementById('typing-input').focus();
+  }
+});
+document.getElementById('lesson-screen').addEventListener('click', function() {
+  const modalOpen = document.getElementById('modal-mount').children.length > 0;
+  if (exerciseActive && !modalOpen) document.getElementById('typing-input').focus();
+});
+
+function updateLiveStats(typed) {
+  if (!startTime || keystrokes===0) return;
+  const acc = Math.round(((keystrokes - keyErrors)/keystrokes)*100);
+  document.getElementById('stat-acc').textContent = acc + '%';
+  const li = Math.min(levelIndex, LEVELS.length-1);
+  if (li >= WPM_SHOW_FROM) {
+    const elapsed = (Date.now()-startTime)/1000/60;
+    const wpm = Math.round((typed.length/5)/Math.max(elapsed,0.001));
+    document.getElementById('stat-wpm').textContent = wpm;
+  }
+}
+
+function completeExercise(typed) {
+  exerciseActive = false;
+  document.getElementById('typing-input').disabled = true;
+  const li = Math.min(levelIndex, LEVELS.length-1);
+  // Accuracy counts every keystroke, so errors fixed with backspace still lower it.
+  const acc = keystrokes > 0 ? Math.round(((keystrokes - keyErrors)/keystrokes)*100) : 100;
+  let elapsed = startTime ? (Date.now()-startTime)/1000/60 : 1;
+  const wpm = Math.round((currentPrompt.length/5)/Math.max(elapsed,0.001));
+
+  // stars: accuracy only until WPM_STARS_FROM
+  let stars;
+  if (li < WPM_STARS_FROM) {
+    stars = acc >= 98 ? 3 : acc >= 90 ? 2 : acc >= 75 ? 1 : 0;
+  } else {
+    stars = (acc>=98&&wpm>=35) ? 3 : (acc>=90&&wpm>=25) ? 2 : acc>=75 ? 1 : 0;
+  }
+  totalStars += stars;
+  exercisesDoneThisLevel++;
+
+  // level up after 3 exercises with avg >=2 stars; mark this level completed
+  let levelUp = false;
+  if (stars >= 2 && exercisesDoneThisLevel >= 3 && li < LEVELS.length-1) {
+    completedLevels.add(li);
+    levelIndex++;
+    exercisesDoneThisLevel = 0;
+    levelUp = true;
+  } else if (stars >= 2 && exercisesDoneThisLevel >= 3 && li === LEVELS.length-1) {
+    // last level: still record completion even though there's nowhere to advance
+    completedLevels.add(li);
+  }
+  saveState(currentChar, {
+    level: levelIndex,
+    completed: Array.from(completedLevels),
+    stars: totalStars,
+    exercises: exercisesDoneThisLevel
+  });
+
+  const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
+  const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
+  const wpmNote = li >= WPM_SHOW_FROM ? ` · ${wpm} WPM` : '';
+  const levelNote = levelUp ? ' 🎉 Level up!' : '';
+  document.getElementById('result-area').innerHTML = `
+    <div class="result-box">
+      <div class="result-stars">${starStr}</div>
+      <div class="result-text">
+        <div class="result-label">${msgs[stars]}${levelNote}</div>
+        <div class="result-sub">${acc}% accuracy${wpmNote} &nbsp;·&nbsp; Enter or click Next →</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="next-btn" onclick="nextExercise()">Next →</button>
+        <button class="btn" onclick="goBack()">← Back</button>
+      </div>
+    </div>`;
+}
+
+function nextExercise() {
+  showExercise();
+}
+
+// ── LEVEL PICKER ───────────────────────────────────────────────────────────────
+function openLevelPicker() {
+  const li = Math.min(levelIndex, LEVELS.length-1);
+  const groupsHtml = LEVEL_GROUPS.map(group => {
+    const items = [];
+    for (let i = group.start; i <= group.end && i < LEVELS.length; i++) {
+      const unlocked = isLevelUnlocked(i);
+      const isCurrent = i === li;
+      const isDone = completedLevels.has(i);
+      let cls = 'lvl-item';
+      if (isCurrent) cls += ' current';
+      else if (isDone) cls += ' done';
+      if (!unlocked) cls += ' locked';
+      const status = isCurrent ? 'Current'
+                   : isDone ? '✓ Done'
+                   : unlocked ? 'Open'
+                   : '🔒 Locked';
+      const onclick = unlocked ? `onclick="jumpToLevel(${i})"` : '';
+      items.push(`
+        <button class="${cls}" ${onclick}>
+          <span class="lvl-num">${i+1}</span>
+          <span class="lvl-label">${LEVELS[i].label}</span>
+          <span class="lvl-status">${status}</span>
+        </button>`);
+    }
+    return `<div class="lvl-group-label">${group.label}</div>
+            <div class="lvl-list">${items.join('')}</div>`;
+  }).join('');
+
+  const lockChecked = settings.lockLevels ? 'checked' : '';
+  document.getElementById('modal-mount').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeLevelPicker()">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Choose a level</div>
+          <button class="modal-close" onclick="closeLevelPicker()">✕</button>
+        </div>
+        <label class="lock-toggle">
+          <input type="checkbox" id="lock-toggle" ${lockChecked} onchange="toggleLockLevels(this.checked)">
+          <span>Lock levels — follow the path in order</span>
+        </label>
+        <div class="lock-hint">${settings.lockLevels
+          ? 'Turn this off to let the student jump to any level.'
+          : 'Locking is off — any level can be selected.'}</div>
+        ${groupsHtml}
+      </div>
+    </div>`;
+}
+
+function toggleLockLevels(on) {
+  settings.lockLevels = on;
+  saveSettings(settings);
+  openLevelPicker(); // re-render so lock/unlock states update live
+}
+
+function closeLevelPicker() {
+  document.getElementById('modal-mount').innerHTML = '';
+  if (exerciseActive) document.getElementById('typing-input').focus();
+}
+
+function jumpToLevel(i) {
+  if (!isLevelUnlocked(i)) return;
+  levelIndex = i;
+  exercisesDoneThisLevel = 0;
+  // persist the new current level (completion set unchanged)
+  saveState(currentChar, {
+    level: levelIndex,
+    completed: Array.from(completedLevels),
+    stars: totalStars,
+    exercises: exercisesDoneThisLevel
+  });
+  closeLevelPicker();
+  showExercise();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+renderAvatarGrid();
+</script>
+</body>
+</html>
