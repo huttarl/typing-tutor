@@ -375,6 +375,10 @@ const ANIMALS = [
 
 // finger: 0=pinky,1=ring,2=middle,3=index (left or right), 4=thumb
 // hand: 'L' or 'R'
+// Indexed by finger number above. Colors match the --finger0..3 / --thumb CSS
+// variables so the JS-drawn hands, keyboard, and legend agree with the CSS keys.
+const FINGER_COLORS = ['#6c63ff','#e85d9e','#f59e0b','#22c55e','#64b5f6'];
+const FINGER_NAMES  = ['pinky','ring finger','middle finger','index finger','thumb'];
 const KEY_INFO = {
   // top row
   'q':{hand:'L',finger:0},'w':{hand:'L',finger:1},'e':{hand:'L',finger:2},'r':{hand:'L',finger:3},'t':{hand:'L',finger:3},
@@ -1151,20 +1155,25 @@ function completeExercise(typed) {
       <div class="result-stars">${starStr}</div>
       <div class="result-text">
         <div class="result-label">${msgs[stars]}${levelNote}</div>
-        <div class="result-sub">${acc}% accuracy${wpmNote} &nbsp;·&nbsp; Enter or click Next →</div>
+        <div class="result-sub"><!-- ${acc}% accuracy${wpmNote} &nbsp;·&nbsp; -->Enter or click Next →</div>
       </div>
       <div class="btn-row">
         <button class="btn primary" id="next-btn" onclick="nextExercise()">Next →</button>
-        <button class="btn" onclick="goBack()">← Back</button>
+        <!-- <button class="btn" onclick="goBack()">← Back</button> -->
       </div>
     </div>`;
 }
 
 // ── AGE MODAL (first time on a character) ───────────────────────────────────────
-let pendingAge = 8; // working value while the modal is open
+let pendingAge = 12; // working value while the modal is open
+
+// 18 is the top of the stepper and stands for "adult" (18 or older). Anyone 12+
+// already gets the longest break interval, so a single 18+ bucket is enough.
+const AGE_MAX = 18;
+function ageLabel(a) { return a >= AGE_MAX ? AGE_MAX + '+' : String(a); }
 
 function openAgeModal() {
-  pendingAge = 8;
+  pendingAge = 12;
   const animal = ANIMALS.find(a => a.id === currentChar);
   renderAgeModal(animal);
 }
@@ -1175,10 +1184,10 @@ function renderAgeModal(animal) {
         <div class="modal-header">
           <div class="modal-title">${animal.emoji} How old are you?</div>
         </div>
-        <p class="age-help">This just helps ${animal.name} know when to suggest a little break. You only set it once.</p>
+        <p class="age-help">This just helps ${animal.name} know when to suggest a break. You only set it once.</p>
         <div class="age-stepper">
           <button class="age-btn" onclick="changeAge(-1)" aria-label="Younger">−</button>
-          <div class="age-value"><span id="age-number">${pendingAge}</span><span class="age-unit">years</span></div>
+          <div class="age-value"><span id="age-number">${ageLabel(pendingAge)}</span><span class="age-unit">years</span></div>
           <button class="age-btn" onclick="changeAge(1)" aria-label="Older">+</button>
         </div>
         <button class="btn primary age-confirm" onclick="confirmAge()">Start!</button>
@@ -1186,8 +1195,8 @@ function renderAgeModal(animal) {
     </div>`;
 }
 function changeAge(delta) {
-  pendingAge = Math.max(4, Math.min(18, pendingAge + delta));
-  document.getElementById('age-number').textContent = pendingAge;
+  pendingAge = Math.max(4, Math.min(AGE_MAX, pendingAge + delta));
+  document.getElementById('age-number').textContent = ageLabel(pendingAge);
 }
 function confirmAge() {
   const s = loadState(currentChar);
