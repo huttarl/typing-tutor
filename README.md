@@ -29,6 +29,10 @@ Open `typing-tutor.html` in a browser and start typing.
   status. A "lock levels" setting (on by default) keeps students on the path;
   turn it off to jump to any level — useful for a student who already has some
   skills, or for testing.
+- **Age-aware break reminders.** Each student enters their age once (stored as
+  a birth year, so it stays current). After an age-appropriate amount of
+  practice (~5–15 minutes), the app gently suggests a break at a natural
+  stopping point. Toggleable.
 - **Audio feedback** for correct and incorrect keystrokes.
 
 ## Getting started
@@ -54,15 +58,15 @@ The entire app — HTML, CSS, and JavaScript — lives in `typing-tutor.html` wi
 no dependencies or build tooling. The curriculum, word lists, and sentences are
 plain data tables near the top of the script and are meant to be easy to edit.
 
-See [`DESIGN.md`](DESIGN.md) for the architecture, the rationale behind the
-curriculum and scoring decisions, and the running to-do / backlog.
+See [`DESIGN.md`](DESIGN.md) for the architecture and the rationale behind the
+curriculum and scoring decisions, and [`TO-DO.md`](TO-DO.md) for the backlog.
 
 ## Status
 
-Under development. No release yet. Planned work (see `DESIGN.md` for the full list) includes
-more repetition on the foundational levels, maybe a session-length timer,
-teaching punctuation and the Shift key explicitly, and an optional free-form
-mode with longer passages from classic literature and poetry.
+A work in progress (not yet released). Planned work (see [`TO-DO.md`](TO-DO.md) for the full list)
+includes more repetition on the foundational levels, teaching punctuation and
+the Shift key explicitly, full offline support, and an optional free-form mode
+with longer passages from classic literature and poetry.
 
 ## License
 
