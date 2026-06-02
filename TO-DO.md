@@ -44,12 +44,12 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       left after its definition was removed — is the kind of thing a review or a
       lightweight lint/test pass should catch. Consider a small build-time check
       or moving logic into testable functions.)
-- [ ] **Decide on the third-party banner script.** Whether to include
+- [x] **Decide on the third-party banner script.** Whether to include
       `https://keepandroidopen.org/banner.js`; if so, weigh its access to the
       page/localStorage and its conflict with the offline goal (perhaps only on
       a hosted copy, not the offline app the children use).
 
-## Done
+## Uncategorized / early history
 
 - [x] Per-character progress via localStorage; no login.
 - [x] One-/two-keys-at-a-time progression; row-based groups; corrected so G/H
