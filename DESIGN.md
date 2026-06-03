@@ -99,6 +99,14 @@ newly introduced keys.
   selectable if it's the first level, already completed, or the one right after
   any completed level. When off, any level is selectable (for testing or for a
   student who already has skills). Toggle lives in the level picker.
+- **Reset a character** (`confirmResetProgress`): a de-emphasized link at the
+  bottom of the level picker deletes the active character's `tt2_<characterId>`
+  key after an inline two-step confirm (`requestResetProgress` /
+  `cancelResetProgress`, gated by `resetConfirmShown`). It then returns to the
+  pick screen with that character re-selected, so the full new-user flow (age
+  modal → level 1) replays — useful for testing or starting over. Global
+  `tt2_settings` is intentionally left untouched. This is accident-resistant
+  (hidden, muted, confirm-gated), **not** secure against a determined student.
 
 ## Break timer (age-based)
 

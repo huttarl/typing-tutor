@@ -303,6 +303,19 @@ body {
 .btn:hover { border-color: var(--accent); color: var(--accent); }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn.primary:hover { background: #574fd6; border-color: #574fd6; }
+.btn.danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn.danger:hover { background: #dc2626; border-color: #dc2626; }
+/* level-picker "danger zone": reset a character's progress */
+.reset-zone { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.reset-link {
+  background: none; border: none; padding: .25rem 0; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: .8rem; font-weight: 600;
+  color: var(--text3); text-decoration: underline;
+}
+.reset-link:hover { color: var(--red); }
+.reset-confirm { background: var(--red-light); border-radius: var(--radius-sm); padding: .75rem .9rem; }
+.reset-confirm-text { display: block; font-size: .85rem; color: var(--text); margin-bottom: .6rem; line-height: 1.4; }
+.reset-confirm-btns { display: flex; gap: 8px; }
 
 /* progress bar */
 .prog-bg { background: var(--border); border-radius: 99px; height: 6px; margin-bottom: 1rem; }
@@ -1215,8 +1228,12 @@ function nextExercise() {
 }
 
 // ── LEVEL PICKER ───────────────────────────────────────────────────────────────
+let resetConfirmShown = false; // is the in-picker "delete progress?" confirm showing?
+
 function openLevelPicker() {
   const li = Math.min(levelIndex, LEVELS.length-1);
+  const animal = ANIMALS.find(a => a.id === currentChar);
+  const who = animal ? `${animal.emoji} ${animal.name}` : 'this character';
   const groupsHtml = LEVEL_GROUPS.map(group => {
     const items = [];
     for (let i = group.start; i <= group.end && i < LEVELS.length; i++) {
@@ -1266,8 +1283,32 @@ function openLevelPicker() {
           ? 'Break timing adapts to the student\u2019s age (about 5\u201315 minutes).'
           : 'Break reminders are off.'}</div>
         ${groupsHtml}
+        <div class="reset-zone">
+          ${resetConfirmShown ? `
+            <div class="reset-confirm">
+              <span class="reset-confirm-text"><strong>Delete all of ${who}'s progress?</strong> This can't be undone.</span>
+              <div class="reset-confirm-btns">
+                <button class="btn danger" onclick="confirmResetProgress()">Delete</button>
+                <button class="btn" onclick="cancelResetProgress()">Cancel</button>
+              </div>
+            </div>`
+          : `<button class="reset-link" onclick="requestResetProgress()">Reset ${who}'s progress…</button>`}
+        </div>
       </div>
     </div>`;
+}
+
+// Reset (delete) the active character's saved progress. Lives at the bottom of
+// the level picker, behind an inline two-step confirm, so a student is unlikely
+// to trigger it by accident. Only clears this character's key, not global settings.
+function requestResetProgress() { resetConfirmShown = true; openLevelPicker(); }
+function cancelResetProgress() { resetConfirmShown = false; openLevelPicker(); }
+function confirmResetProgress() {
+  try { localStorage.removeItem('tt2_' + currentChar); } catch (e) {}
+  resetConfirmShown = false;
+  closeLevelPicker();
+  goBack();                 // return to the character-pick screen, grid refreshed
+  if (currentChar) selectChar(currentChar); // re-select so "Start with…" replays the new-user flow
 }
 
 function toggleLockLevels(on) {
@@ -1290,6 +1331,7 @@ function toggleBreakReminders(on) {
 }
 
 function closeLevelPicker() {
+  resetConfirmShown = false; // next open starts on the plain link, not the confirm
   document.getElementById('modal-mount').innerHTML = '';
   if (exerciseActive) document.getElementById('typing-input').focus();
 }

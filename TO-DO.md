@@ -32,6 +32,7 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       poetry (e.g. Poe). May fetch passages online so the student isn't given
       the same text repeatedly — an *optional, internet-requiring* feature, kept
       separate from the offline core.
+- [x] **Reset a character's progress.** Somewhat hidden; requires confirmation.
 
 ## Technical / quality
 
