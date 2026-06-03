@@ -24,6 +24,18 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       Shift-teaching level yet.
 - [ ] **Curated Bible passages.** Allow focusing sentence practice on specific
       passages the family wants to learn.
+- [ ] **Show purpose of level.** At top of screen during exercises, show a brief
+      purpose statement like "Add v and n" or "practice home-row words" or "review
+      letters from top two rows." This helps motivation by connecting activity to progress.
+      This purpose statement should be separate from, and not replaced by, the
+      letter-by-letter instructions during the typing of the exercise.
+      (I think it's already being displayed, corresponding to "label", but is
+      being replaced by other instructions during typing.)
+- [ ] Increased the word bank to include more variety. Use classic authors / poets
+such as Shakespeare, Hawthorne, Poe (but make sure the spelling is correct by modern standards).
+- [ ] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
+- [ ] When practicing actual sentences or longer passages from literature, cite the title
+and author. (Not sure if the student should be asked to type these.)
 
 ## Features
 
@@ -49,6 +61,8 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       `https://keepandroidopen.org/banner.js`; if so, weigh its access to the
       page/localStorage and its conflict with the offline goal (perhaps only on
       a hosted copy, not the offline app the children use).
+- [ ] Words from great books shouldn't be stripped of their capitalization.
+      And words that require punctuation, like "Mrs.", shouldn't be stripped of it.
 
 ## Uncategorized / early history
 
@@ -69,3 +83,9 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
 - [x] Character grid distinguishes started vs. unused characters.
 - [x] Enter advances to the next exercise.
 - [x] Save-progress hint; "Continue with" vs "Start with" button text.
+- [ ] Rename curLi() and getLv() to be more readable, e.g. currentLevelIndex (if that's what it means) and getLevel.
+- [ ]Allow the beginning flow of selecting a character and starting with that character to be accomplished with a double-click, instead of having to click in two different places (while still allowing the current method of selecting the character and then clicking the Start button).
+- [ ] Maybe split out the js code from the HTML file? That would simplify code changes, but
+would also degrade portability.
+- [ ] Adjust color-coding of fingers to avoid the pinkish color which is too close to red and suggests a problem.
+

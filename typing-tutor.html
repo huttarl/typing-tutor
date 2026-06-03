@@ -415,38 +415,42 @@ const K_PUNCT   = K_BOTTOM.concat([',','.']);                                // 
 
 // Levels: key-learning levels add 1-2 keys; each group ends with real-word
 // review level(s) using a curated list limited to the letters learned so far.
+// What each level generates is chosen in generatePrompt by these flags, in order:
+//   sentenceLevel → a full sentence;  wordKey → that GROUP_WORDS list;
+//   wordLevel → the mixed WORD_BANK;  otherwise → a random letter drill.
+// So a level needs at most one of these; plain drills carry none.
 const LEVELS = [
   // ── Home row group (a s d f g h j k l ;) ──
-  {keys:['f','j'],                          label:'F and J — index fingers, home row',      wordLevel:false},
-  {keys:['f','j','d','k'],                  label:'Add D and K — middle fingers',           wordLevel:false},
-  {keys:['f','j','d','k','s','l'],          label:'Add S and L — ring fingers',             wordLevel:false},
-  {keys:['f','j','d','k','s','l','a',';'],  label:'Add A and ; — pinky fingers',            wordLevel:false},
-  {keys:['f','j','d','k','s','l','a',';','g','h'], label:'Add G and H — index stretch (full home row!)', wordLevel:false},
-  {keys:K_HOME, label:'Home row words', wordLevel:true, wordKey:'home'},
+  {keys:['f','j'],                          label:'F and J — index fingers, home row'},
+  {keys:['f','j','d','k'],                  label:'Add D and K — middle fingers'},
+  {keys:['f','j','d','k','s','l'],          label:'Add S and L — ring fingers'},
+  {keys:['f','j','d','k','s','l','a',';'],  label:'Add A and ; — pinky fingers'},
+  {keys:['f','j','d','k','s','l','a',';','g','h'], label:'Add G and H — index stretch (full home row!)'},
+  {keys:K_HOME, label:'Home row words', wordKey:'home'},
 
   // ── Top row group (q w e r t y u i o p) ──
-  {keys:K_HOME.concat(['e','i']),                         label:'Add E and I — middle fingers, top row', wordLevel:false},
-  {keys:K_HOME.concat(['e','i','r','u']),                 label:'Add R and U — index fingers, top row',  wordLevel:false},
-  {keys:K_HOME.concat(['e','i','r','u','t','y']),         label:'Add T and Y — index stretch, top row',  wordLevel:false},
-  {keys:K_HOME.concat(['e','i','r','u','t','y','w','o']), label:'Add W and O — ring fingers, top row',   wordLevel:false},
-  {keys:K_TOP,                                            label:'Add Q and P — pinky fingers (full top row!)', wordLevel:false},
-  {keys:K_TOP, label:'Top row words', wordLevel:true, wordKey:'topOnly'},
-  {keys:K_TOP, label:'Top + home row words', wordLevel:true, wordKey:'topHome'},
+  {keys:K_HOME.concat(['e','i']),                         label:'Add E and I — middle fingers, top row'},
+  {keys:K_HOME.concat(['e','i','r','u']),                 label:'Add R and U — index fingers, top row'},
+  {keys:K_HOME.concat(['e','i','r','u','t','y']),         label:'Add T and Y — index stretch, top row'},
+  {keys:K_HOME.concat(['e','i','r','u','t','y','w','o']), label:'Add W and O — ring fingers, top row'},
+  {keys:K_TOP,                                            label:'Add Q and P — pinky fingers (full top row!)'},
+  {keys:K_TOP, label:'Top row words', wordKey:'topOnly'},
+  {keys:K_TOP, label:'Top + home row words', wordKey:'topHome'},
 
   // ── Bottom row group (z x c v b n m) ──
-  {keys:K_TOP.concat(['v','n']),                 label:'Add V and N — index fingers, bottom row', wordLevel:false},
-  {keys:K_TOP.concat(['v','n','c','m']),         label:'Add C and M — middle finger / index',     wordLevel:false},
-  {keys:K_TOP.concat(['v','n','c','m','b']),     label:'Add B — left index stretch',              wordLevel:false},
-  {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)', wordLevel:false},
-  {keys:K_BOTTOM, label:'Bottom + home row words', wordLevel:true, wordKey:'bottomHome'},
+  {keys:K_TOP.concat(['v','n']),                 label:'Add V and N — index fingers, bottom row'},
+  {keys:K_TOP.concat(['v','n','c','m']),         label:'Add C and M — middle finger / index'},
+  {keys:K_TOP.concat(['v','n','c','m','b']),     label:'Add B — left index stretch'},
+  {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)'},
+  {keys:K_BOTTOM, label:'Bottom + home row words', wordKey:'bottomHome'},
 
-  // ── Real words (mixed, from the full bank) ──
+  // ── Real words (mixed, from the full bank) — the only level that reads wordLevel ──
   {keys:K_PUNCT, label:'Real words from great books', wordLevel:true},
 
   // ── Real sentences (shortest → longest) ──
-  {keys:K_PUNCT, label:'Short real sentences', wordLevel:true, sentenceLevel:true},
-  {keys:K_PUNCT, label:'Longer sentences — building speed', wordLevel:true, sentenceLevel:true, showWpm:true},
-  {keys:K_PUNCT, label:'Sentences — speed and accuracy', wordLevel:true, sentenceLevel:true, showWpm:true, wpmStars:true},
+  {keys:K_PUNCT, label:'Short real sentences', sentenceLevel:true},
+  {keys:K_PUNCT, label:'Longer sentences — building speed', sentenceLevel:true, showWpm:true},
+  {keys:K_PUNCT, label:'Sentences — speed and accuracy', sentenceLevel:true, showWpm:true, wpmStars:true},
 ];
 
 // Pre-generated word lists, restricted to the letters learned by that level.
@@ -487,34 +491,27 @@ const LEVEL_GROUPS = [
   {label: 'Real sentences', start: 19, end: 21},
 ];
 
-// Large word bank filtered by available keys at use time
+// Large word bank filtered by available keys at use time. Order is not
+// meaningful (selection is random), and entries are unique — no duplicates.
 const WORD_BANK = [
   'the','of','and','a','to','in','was','he','she','had','her','that',
   'it','his','is','with','as','for','on','not','but','be','at','by',
-  'an','which','have','from','said','were','all','been','very','their',
-  'so','this','more','would','could','my','one','what','they','them',
-  'up','when','no','out','do','if','there','about','time','into','then',
-  'than','how','any','its','now','here','who','yet','some','great',
-  'little','over','like','him','upon','such','other','made','again',
-  'come','each','also','our','first','own','never','after','every',
-  'much','well','before','did','where','same','know','may','young',
-  'dear','long','even','though','us','most','might','those','only',
-  'good','old','your','we','has','these','just','man','two','himself',
-  'think','too','am','under','without','day','many','next','quite',
-  'thought','find','you','away','head','went','make','felt','look',
-  'house','saw','let','seemed','eyes','face','against','down','back',
-  'moment','perhaps','tell','nothing','fine','sure','kind','mind',
-  'heart','life','time','place','world','hand','name','home','work',
-  'friend','father','mother','sister','brother','children','husband',
-  'always','never','often','still','soon','once','away','quite',
-  'between','without','through','nothing','something','everything',
-  'indeed','replied','however','whether','another','together','perhaps',
-  'general','morning','evening','moment','manner','matter','family',
-  'feeling','herself','himself','herself','whatever','certainly',
-  'understood','immediately','particularly','unfortunately','fortunately',
-  'mr','mrs','miss','said','asked','answered','exclaimed','continued',
-  'elizabeth','darcy','jane','bingley','wickham','bennet','collins',
-  'oliver','pip','esther','jarndyce','scrooge','copperfield',
+  'an','which','have','from','said','were','all','been','very','their','so','this',
+  'more','would','could','my','one','what','they','them','up','when','no','out',
+  'do','if','there','about','time','into','then','than','how','any','its','now',
+  'here','who','yet','some','great','little','over','like','him','upon','such','other',
+  'made','again','come','each','also','our','first','own','never','after','every','much',
+  'well','before','did','where','same','know','may','young','dear','long','even','though',
+  'us','most','might','those','only','good','old','your','we','has','these','just',
+  'man','two','himself','think','too','am','under','without','day','many','next','quite',
+  'thought','find','you','away','head','went','make','felt','look','house','saw','let',
+  'seemed','eyes','face','against','down','back','moment','perhaps','tell','nothing','fine','sure',
+  'kind','mind','heart','life','place','world','hand','name','home','work','friend','father',
+  'mother','sister','brother','children','husband','always','often','still','soon','once','between','through',
+  'something','everything','indeed','replied','however','whether','another','together','general','morning','evening','manner',
+  'matter','family','feeling','herself','whatever','certainly','understood','immediately','particularly','unfortunately','fortunately','mr',
+  'mrs','miss','asked','answered','exclaimed','continued','elizabeth','darcy','jane','bingley','wickham','bennet',
+  'collins','oliver','pip','esther','jarndyce','scrooge','copperfield',
 ];
 
 // Complete sentences from Austen, Dickens, and the Bible (World English Bible,
@@ -632,6 +629,17 @@ function loadState(id) {
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
 }
+// Persist the active character's current progress. Single source of truth for the
+// saved shape, so every save preserves all fields (e.g. birthYear) consistently.
+function saveProgress() {
+  saveState(currentChar, {
+    level: levelIndex,
+    completed: Array.from(completedLevels),
+    stars: totalStars,
+    exercises: exercisesDoneThisLevel,
+    birthYear: currentBirthYear,
+  });
+}
 
 // Global settings (shared across characters)
 function loadSettings() {
@@ -667,9 +675,9 @@ function renderAvatarGrid() {
   const g = document.getElementById('avatar-grid');
   g.innerHTML = ANIMALS.map(a => {
     const s = loadState(a.id);
-    const lv = Math.min(s.level, LEVELS.length-1);
+    const level = Math.min(s.level, LEVELS.length-1);
     const hasProgress = characterHasProgress(s);
-    const progressText = hasProgress ? `Level ${lv+1} · ${s.stars}⭐` : 'New — not started';
+    const progressText = hasProgress ? `Level ${level+1} · ${s.stars}⭐` : 'New — not started';
     return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')">
       <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
       <div class="avatar-name">${a.name}</div>
@@ -749,25 +757,34 @@ function maybeSuggestBreak() {
 }
 
 // ── LESSON LOGIC ───────────────────────────────────────────────────────────────
-function getLv() { return LEVELS[Math.min(levelIndex, LEVELS.length-1)]; }
+// Current level index, clamped so an over-run levelIndex still maps to the last level.
+function clampedLevelIndex() { return Math.min(levelIndex, LEVELS.length-1); }
+function getLevel() { return LEVELS[clampedLevelIndex()]; }
+
+// Is a letter being asked for as a capital (so the student must hold Shift)?
+function isCapitalLetter(raw) {
+  return raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
+}
+// Is any modal (level picker or age entry) currently mounted?
+function isModalOpen() { return document.getElementById('modal-mount').children.length > 0; }
 
 function showExercise() {
-  const lv = getLv();
-  const li = Math.min(levelIndex, LEVELS.length-1);
+  const level = getLevel();
+  const levelIdx = clampedLevelIndex();
   const animal = ANIMALS.find(a=>a.id===currentChar);
 
   document.getElementById('lesson-title').textContent = animal.emoji + ' ' + animal.name;
-  document.getElementById('level-badge').innerHTML = 'Level ' + (li+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
-  document.getElementById('prog-fill').style.width = Math.round((li / LEVELS.length)*100) + '%';
-  document.getElementById('stat-level').textContent = li+1;
+  document.getElementById('level-badge').innerHTML = 'Level ' + (levelIdx+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
+  document.getElementById('prog-fill').style.width = Math.round((levelIdx / LEVELS.length)*100) + '%';
+  document.getElementById('stat-level').textContent = levelIdx+1;
   document.getElementById('stat-acc').textContent = '—';
   document.getElementById('stat-wpm').textContent = '—';
 
   // WPM visibility
-  const showWpm = li >= WPM_SHOW_FROM;
+  const showWpm = levelIdx >= WPM_SHOW_FROM;
   document.getElementById('stat-wpm-card').classList.toggle('hidden-stat', !showWpm);
 
-  currentPrompt = generatePrompt(lv, li);
+  currentPrompt = generatePrompt(level, levelIdx);
   startTime = null;
   exerciseActive = true;
   keystrokes = 0;
@@ -781,8 +798,8 @@ function showExercise() {
 
   const firstChar = currentPrompt[0] || '';
   renderPrompt('');
-  renderFingerReminder(firstChar, lv, li);
-  renderKeyboard(lv, li, firstChar);
+  renderFingerReminder(firstChar, level, levelIdx);
+  renderKeyboard(level, firstChar);
   updateHands(firstChar);
   document.getElementById('result-area').innerHTML = '';
 }
@@ -807,13 +824,13 @@ function promptLineCapacity() {
   return Math.max(10, Math.floor(inner / per) - 1); // -1 char of safety margin
 }
 
-function generatePrompt(lv, li) {
-  const keys = lv.keys.filter(k => /[a-z]/.test(k));
+function generatePrompt(level, levelIdx) {
+  const keys = level.keys.filter(k => /[a-z]/.test(k));
 
   // ── Sentence levels: progress shortest → longest across the sentence levels ──
-  if (lv.sentenceLevel) {
+  if (level.sentenceLevel) {
     const tierCount = LEVELS.filter(l => l.sentenceLevel).length; // number of sentence levels
-    const tier = Math.min(li - SENT_LEVEL_FIRST, tierCount - 1);  // 0-based tier
+    const tier = Math.min(levelIdx - SENT_LEVEL_FIRST, tierCount - 1);  // 0-based tier
     // SENTENCES is pre-sorted shortest→longest; split into tiers by position.
     const n = SENTENCES.length;
     const lo = Math.floor((tier / tierCount) * n);
@@ -823,8 +840,8 @@ function generatePrompt(lv, li) {
   }
 
   // ── Group word-review levels: use the pre-generated list for this group ──
-  if (lv.wordKey && GROUP_WORDS[lv.wordKey]) {
-    const list = GROUP_WORDS[lv.wordKey];
+  if (level.wordKey && GROUP_WORDS[level.wordKey]) {
+    const list = GROUP_WORDS[level.wordKey];
     const cap = promptLineCapacity();
     const target = Math.min(22 + Math.floor(Math.random()*12), cap);
     let words = [], len = 0, attempts = 0;
@@ -838,7 +855,7 @@ function generatePrompt(lv, li) {
   }
 
   // ── Mixed real-words level: draw from the full bank, filtered to learned keys ──
-  if (lv.wordLevel) {
+  if (level.wordLevel) {
     const avail = new Set(keys.concat([' ']));
     const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c)));
     if (pool.length >= 3) {
@@ -855,7 +872,7 @@ function generatePrompt(lv, li) {
   }
 
   // ── Drill levels: randomized letter/syllable chunks from learned keys ──
-  const hasSpace = li >= 1;
+  const hasSpace = levelIdx >= 1;
   const cap = promptLineCapacity();
   // Desired length (for variety), but never longer than one line fits.
   const target = Math.min(24 + Math.floor(Math.random()*12), cap);
@@ -894,32 +911,32 @@ function keyName(ch) {
 }
 
 // Which named group a level index belongs to.
-function groupOf(li) {
-  const g = LEVEL_GROUPS.find(g => li >= g.start && li <= g.end);
+function groupOf(levelIdx) {
+  const g = LEVEL_GROUPS.find(g => levelIdx >= g.start && levelIdx <= g.end);
   return g ? g.label : '';
 }
 
-function renderFingerReminder(nextChar, lv, li) {
+function renderFingerReminder(nextChar, level, levelIdx) {
   const el  = document.getElementById('finger-reminder');
   const dot = document.getElementById('reminder-dot');
   const txt = document.getElementById('reminder-text');
   const posEl = document.getElementById('position-hint');
 
   const raw = nextChar || '';
-  const isCapital = raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
+  const isCapital = isCapitalLetter(raw);
   const ch = raw.length === 1 ? raw.toLowerCase() : null;
   const info = ch ? KEY_INFO[ch] : null;
 
   // Larger, more prominent coaching on the early home-row levels; smaller later.
-  const inHomeGroup = groupOf(li) === 'Home row';
+  const inHomeGroup = groupOf(levelIdx) === 'Home row';
   const isLarge = inHomeGroup;
-  const isSmall = li >= 13;   // by the bottom-row group, keep it subtle
+  const isSmall = levelIdx >= 13;   // by the bottom-row group, keep it subtle
   el.className = 'finger-reminder' + (isLarge ? ' large' : isSmall ? ' small' : '');
 
   // Positioning hint — shown only while learning the home row, where it matters most.
   if (inHomeGroup) {
     posEl.style.display = '';
-    posEl.textContent = (li === 0)
+    posEl.textContent = (levelIdx === 0)
       ? 'Place your left index finger on F and your right index finger on J. Feel the little bumps that mark the home keys.'
       : 'Rest your fingers on the home row: A S D F (left hand) and J K L ; (right hand). Feel the bumps on F and J.';
   } else {
@@ -947,7 +964,7 @@ function renderFingerReminder(nextChar, lv, li) {
     dot.style.background = '#ccc';
     el.style.background = 'var(--surface2)';
     el.style.borderLeft = '4px solid var(--border)';
-    txt.textContent = inHomeGroup ? 'Keep your fingers on the home row!' : lv.label;
+    txt.textContent = inHomeGroup ? 'Keep your fingers on the home row!' : level.label;
   }
 }
 
@@ -1001,8 +1018,8 @@ function updateHands(nextChar) {
   const info = ch && ch !== ' ' ? KEY_INFO[ch] : (ch===' ' ? {hand:'R',finger:4} : null);
   const leftActive  = info && info.hand==='L';
   const rightActive = info && info.hand==='R';
-  drawHand('hand-left',  info&&leftActive  ? info.finger : -1, leftActive);
-  drawHand('hand-right', info&&rightActive ? info.finger : -1, rightActive);
+  drawHand('hand-left',  leftActive  ? info.finger : -1, leftActive);
+  drawHand('hand-right', rightActive ? info.finger : -1, rightActive);
 }
 
 // ── KEYBOARD ───────────────────────────────────────────────────────────────────
@@ -1020,14 +1037,14 @@ const KB_ROWS = [
 const UNIT = 30;   // px per key unit
 const GAP  = 4;    // px gap between keys
 
-function renderKeyboard(lv, li, nextChar) {
-  const unlockedSet = new Set(lv.keys);
+function renderKeyboard(level, nextChar) {
+  const unlockedSet = new Set(level.keys);
   const homeRow = new Set(['a','s','d','f','g','h','j','k','l',';']);
   const wrap = document.getElementById('keyboard');
 
   // Determine the current key + whether Shift is needed (capital letters)
   const raw = nextChar || '';
-  const needsShift = raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
+  const needsShift = isCapitalLetter(raw);
   const curLower = raw.toLowerCase();
   const curInfo = KEY_INFO[curLower];
   // Use the Shift key on the OPPOSITE hand from the letter being typed.
@@ -1094,8 +1111,9 @@ document.getElementById('typing-input').addEventListener('input', function(e) {
   updateLiveStats(typed);
 
   const nextChar = typed.length < currentPrompt.length ? currentPrompt[typed.length] : '';
-  renderFingerReminder(nextChar, getLv(), Math.min(levelIndex, LEVELS.length-1));
-  renderKeyboard(getLv(), Math.min(levelIndex, LEVELS.length-1), nextChar);
+  const levelIdx = clampedLevelIndex();
+  renderFingerReminder(nextChar, getLevel(), levelIdx);
+  renderKeyboard(getLevel(), nextChar);
   updateHands(nextChar);
 
   if (typed.length >= currentPrompt.length) {
@@ -1105,8 +1123,7 @@ document.getElementById('typing-input').addEventListener('input', function(e) {
 
 // keep focus on hidden input during active exercise; Enter advances when result shown
 document.addEventListener('keydown', function(e) {
-  const modalOpen = document.getElementById('modal-mount').children.length > 0;
-  if (modalOpen) {
+  if (isModalOpen()) {
     if (e.key === 'Escape') closeLevelPicker();
     return;
   }
@@ -1121,16 +1138,15 @@ document.addEventListener('keydown', function(e) {
   }
 });
 document.getElementById('lesson-screen').addEventListener('click', function() {
-  const modalOpen = document.getElementById('modal-mount').children.length > 0;
-  if (exerciseActive && !modalOpen) document.getElementById('typing-input').focus();
+  if (exerciseActive && !isModalOpen()) document.getElementById('typing-input').focus();
 });
 
 function updateLiveStats(typed) {
   if (!startTime || keystrokes===0) return;
   const acc = Math.round(((keystrokes - keyErrors)/keystrokes)*100);
   document.getElementById('stat-acc').textContent = acc + '%';
-  const li = Math.min(levelIndex, LEVELS.length-1);
-  if (li >= WPM_SHOW_FROM) {
+  const levelIdx = clampedLevelIndex();
+  if (levelIdx >= WPM_SHOW_FROM) {
     const elapsed = (Date.now()-startTime)/1000/60;
     const wpm = Math.round((typed.length/5)/Math.max(elapsed,0.001));
     document.getElementById('stat-wpm').textContent = wpm;
@@ -1140,7 +1156,7 @@ function updateLiveStats(typed) {
 function completeExercise(typed) {
   exerciseActive = false;
   document.getElementById('typing-input').disabled = true;
-  const li = Math.min(levelIndex, LEVELS.length-1);
+  const levelIdx = clampedLevelIndex();
   // Accuracy counts every keystroke, so errors fixed with backspace still lower it.
   const acc = keystrokes > 0 ? Math.round(((keystrokes - keyErrors)/keystrokes)*100) : 100;
   let elapsed = startTime ? (Date.now()-startTime)/1000/60 : 1;
@@ -1148,7 +1164,7 @@ function completeExercise(typed) {
 
   // stars: accuracy only until WPM_STARS_FROM
   let stars;
-  if (li < WPM_STARS_FROM) {
+  if (levelIdx < WPM_STARS_FROM) {
     stars = acc >= 98 ? 3 : acc >= 90 ? 2 : acc >= 75 ? 1 : 0;
   } else {
     stars = (acc>=98&&wpm>=35) ? 3 : (acc>=90&&wpm>=25) ? 2 : acc>=75 ? 1 : 0;
@@ -1158,26 +1174,20 @@ function completeExercise(typed) {
 
   // level up after 3 exercises with avg >=2 stars; mark this level completed
   let levelUp = false;
-  if (stars >= 2 && exercisesDoneThisLevel >= 3 && li < LEVELS.length-1) {
-    completedLevels.add(li);
-    levelIndex++;
-    exercisesDoneThisLevel = 0;
-    levelUp = true;
-  } else if (stars >= 2 && exercisesDoneThisLevel >= 3 && li === LEVELS.length-1) {
-    // last level: still record completion even though there's nowhere to advance
-    completedLevels.add(li);
+  if (stars >= 2 && exercisesDoneThisLevel >= 3) {
+    completedLevels.add(levelIdx);
+    // Advance unless we're already on the last level (nowhere left to go).
+    if (levelIdx < LEVELS.length-1) {
+      levelIndex++;
+      exercisesDoneThisLevel = 0;
+      levelUp = true;
+    }
   }
-  saveState(currentChar, {
-    level: levelIndex,
-    completed: Array.from(completedLevels),
-    stars: totalStars,
-    exercises: exercisesDoneThisLevel,
-    birthYear: currentBirthYear
-  });
+  saveProgress();
 
   const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
   const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
-  const wpmNote = li >= WPM_SHOW_FROM ? ` · ${wpm} WPM` : '';
+  const wpmNote = levelIdx >= WPM_SHOW_FROM ? ` · ${wpm} WPM` : '';
   const levelNote = levelUp ? ' 🎉 Level up!' : '';
 
   // At this natural stopping point, gently suggest a break if it's time.
@@ -1257,12 +1267,12 @@ function nextExercise() {
 let resetConfirmShown = false; // is the in-picker "delete progress?" confirm showing?
 
 function openLevelPicker() {
-  const li = Math.min(levelIndex, LEVELS.length-1);
+  const levelIdx = clampedLevelIndex();
   const groupsHtml = LEVEL_GROUPS.map(group => {
     const items = [];
     for (let i = group.start; i <= group.end && i < LEVELS.length; i++) {
       const unlocked = isLevelUnlocked(i);
-      const isCurrent = i === li;
+      const isCurrent = i === levelIdx;
       const isDone = completedLevels.has(i);
       let cls = 'lvl-item';
       if (isCurrent) cls += ' current';
@@ -1379,14 +1389,7 @@ function jumpToLevel(i) {
   if (!isLevelUnlocked(i)) return;
   levelIndex = i;
   exercisesDoneThisLevel = 0;
-  // persist the new current level (completion set unchanged)
-  saveState(currentChar, {
-    level: levelIndex,
-    completed: Array.from(completedLevels),
-    stars: totalStars,
-    exercises: exercisesDoneThisLevel,
-    birthYear: currentBirthYear
-  });
+  saveProgress(); // persist the new current level (completion set unchanged)
   closeLevelPicker();
   showExercise();
 }
