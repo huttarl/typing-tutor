@@ -532,20 +532,29 @@ const WORD_BANK = [
   'Collins','Oliver','Pip','Esther','Jarndyce','Scrooge','Copperfield',
 ];
 
-// Complete sentences from Austen, Dickens, and the Bible (World English Bible,
-// public domain, modern English). Every entry has a verified `source`, shown
-// under the prompt (not typed); don't add a sentence without one. The list is
-// kept pre-sorted shortest → longest so sentence practice ramps up gradually.
+// Sentence/quotation practice. Each entry has a verified `source` (shown under the
+// prompt, not typed) — don't add one without it. Drawn from the Bible (World English
+// Bible) and public-domain writers: Austen, Dickens, Shakespeare, Milton, Poe,
+// Hawthorne, Newton, Bacon, Samuel Johnson, Marcus Aurelius, plus a few Latin phrases.
+// Texts use only coachable characters: letters, space, and the punctuation the
+// keyboard/finger coaching supports — , . ; : ' " ? ! - / (shifted ones like
+// : " ? ! are coached via Shift). The list is kept pre-sorted shortest → longest.
 // (Psalm/divine-name verses use the conventional "the Lord" rendering for
 // familiarity rather than WEB's "Yahweh".)
 const SENTENCES = [
   {text:"Jesus wept.",                                                  source:"John 11:35 (WEB)"},
   {text:"God is love.",                                                 source:"1 John 4:8 (WEB)"},
   {text:"God is light.",                                                source:"1 John 1:5 (WEB)"},
+  {text:"Memento mori.", source:"Latin: \"Remember that you must die.\""},
+  {text:"Dum spiro, spero.", source:"Latin proverb: \"While I breathe, I hope.\""},
+  {text:"Veni, vidi, vici.", source:"Julius Caesar: \"I came, I saw, I conquered.\""},
+  {text:"Cogito, ergo sum.", source:"René Descartes: \"I think, therefore I am.\""},
   {text:"Let there be light.",                                          source:"Genesis 1:3 (WEB)"},
-  {text:"Oliver asked for more.",                                       source:"Charles Dickens, Oliver Twist"},
+  {text:"Errare humanum est.", source:"Latin proverb: \"To err is human.\""},
+  {text:"Ex nihilo nihil fit.", source:"Latin proverb: \"Nothing comes from nothing.\""},
+  {text:"'Please, sir, I want some more.'", source:"Charles Dickens, Oliver Twist"},
   {text:"The Lord is my shepherd.",                                     source:"Psalm 23:1 (WEB)"},
-  {text:"It was the best of times.",                                    source:"Charles Dickens, A Tale of Two Cities"},
+  {text:"It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, ...", source:"Charles Dickens, A Tale of Two Cities"},
   {text:"Be still, and know that I am God.",                            source:"Psalm 46:10 (WEB)"},
   {text:"A gentle answer turns away wrath.",                            source:"Proverbs 15:1 (WEB)"},
   {text:"A cheerful heart is good medicine.",                           source:"Proverbs 17:22 (WEB)"},
@@ -553,16 +562,41 @@ const SENTENCES = [
   {text:"The Lord is my light and my salvation.",                       source:"Psalm 27:1 (WEB)"},
   {text:"Trust in the Lord with all your heart.",                       source:"Proverbs 3:5 (WEB)"},
   {text:"She was a woman of mean understanding.",                       source:"Jane Austen, Pride and Prejudice"},
-  {text:"It is a truth universally acknowledged.",                      source:"Jane Austen, Pride and Prejudice"},
+  {text:"It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.", source:"Jane Austen, Pride and Prejudice"},
   {text:"Give thanks to the Lord, for he is good.",                     source:"Psalm 107:1 (WEB)"},
+  {text:"We cannot command nature except by obeying her.", source:"Francis Bacon, Novum Organum"},
   {text:"A large income is the best recipe for happiness.",             source:"Jane Austen, Mansfield Park"},
+  {text:"To observe attentively is to remember distinctly.", source:"Edgar Allan Poe, The Murders in the Rue Morgue"},
+  {text:"All that we see or seem is but a dream within a dream.", source:"Edgar Allan Poe, A Dream Within a Dream"},
   {text:"There is nothing like staying at home for real comfort.",      source:"Jane Austen, Emma"},
   {text:"In the beginning, God created the heavens and the earth.",     source:"Genesis 1:1 (WEB)"},
   {text:"Your word is a lamp to my feet, and a light for my path.",     source:"Psalm 119:105 (WEB)"},
+  {text:"Men more frequently require to be reminded than informed.", source:"Samuel Johnson, The Rambler"},
   {text:"The gentlemen pronounced him to be a fine figure of a man.",   source:"Jane Austen, Pride and Prejudice"},
+  {text:"The world owes all its onward impulses to men ill at ease.", source:"Nathaniel Hawthorne, The House of the Seven Gables"},
   {text:"The power of doing anything with quickness is always prized.", source:"Jane Austen, Pride and Prejudice"},
   {text:"A woman must have a thorough knowledge of music and singing.", source:"Jane Austen, Pride and Prejudice"},
+  {text:"The happy man inevitably confines himself within ancient limits.", source:"Nathaniel Hawthorne, The House of the Seven Gables"},
   {text:"To be fond of dancing was a certain step towards falling in love.", source:"Jane Austen, Pride and Prejudice"},
+  {text:"One half of the world cannot understand the pleasures of the other.", source:"Jane Austen, Emma"},
+  {text:"People always live forever when there is an annuity to be paid them.", source:"Jane Austen, Sense and Sensibility"},
+  {text:"If I have seen further it is by standing on the shoulders of giants.", source:"Isaac Newton, letter to Robert Hooke, 1675"},
+  {text:"The boundaries which divide Life from Death are at best shadowy and vague.", source:"Edgar Allan Poe, The Premature Burial"},
+  {text:"There are people who the more you do for them, the less they will do for themselves.", source:"Jane Austen, Emma"},
+  {text:"The mind is its own place, and in itself can make a heaven of hell, a hell of heaven.", source:"John Milton, Paradise Lost"},
+  {text:"Cowards die many times before their deaths; the valiant never taste of death but once.", source:"William Shakespeare, Julius Caesar"},
+  {text:"Curiosity is one of the permanent and certain characteristics of a vigorous intellect.", source:"Samuel Johnson, The Rambler"},
+  {text:"Life's but a walking shadow, a poor player that struts and frets his hour upon the stage.", source:"William Shakespeare, Macbeth"},
+  {text:"There are more things in heaven and earth, Horatio, than are dreamt of in your philosophy.", source:"William Shakespeare, Hamlet"},
+  {text:"It was a nice sickly season just at this time. In commercial phrase, coffins were looking up.", source:"Charles Dickens, Oliver Twist"}, 
+  {text:"Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.", source:"Francis Bacon, Of Studies"},
+  {text:"Truth is ever to be found in simplicity, and not in the multiplicity and confusion of things.", source:"Isaac Newton"},
+  {text:"They who dream by day are cognizant of many things which escape those who dream only by night.", source:"Edgar Allan Poe, Eleonora"},
+  {text:"One does not love a place the less for having suffered in it, unless it has been all suffering.", source:"Jane Austen, Persuasion"},
+  {text:"A wrongdoer is often a man who has left something undone, not always one who has done something.", source:"Marcus Aurelius, Meditations"},
+  {text:"Hope is itself a species of happiness, and, perhaps, the chief happiness which this world affords.", source:"Samuel Johnson"},
+  {text:"Wherever there is a heart and an intellect, the diseases of the physical frame are tinged with the peculiarities of these.", source:"Nathaniel Hawthorne, The Scarlet Letter"},
+  {text:"If a man will begin with certainties, he shall end in doubts; but if he will be content to begin with doubts he shall end in certainties.", source:"Francis Bacon, The Advancement of Learning"},
 ];
 
 // ── STATE ──────────────────────────────────────────────────────────────────────

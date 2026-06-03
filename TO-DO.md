@@ -64,8 +64,21 @@ and author. (Not sure if the student should be asked to type these.)
       a hosted copy, not the offline app the children use).
 - [x] Words from great books shouldn't be stripped of their capitalization.
       And words that require punctuation, like "Mrs.", shouldn't be stripped of it.
-- [ ] When doing whole sentences and passages, make sure not to repeat the same passage
+- [ ] When presenting whole sentences and passages, make sure not to repeat the same passage
       twice in a row.
+- [ ] We'll probably have to check our quotes. I found at least one misquote. Consider wikiquotes to be authoritative.
+- [ ] Maybe add a "Redo" button at the bottom next to "Next" that allows the user to redo the exercise they just did, if desired.
+- [ ] Maybe add a confetti/star "explosion" over the page when the student completes an
+exercise with 3 stars.
+- [ ] Level 4 says "Add A and ;", but the first two exercises have only one 'a' and no ';'
+      Not sure if this is a more general problem, but if you're adding certain keys,
+      the new keys should (both/all) be used frequently in the exercise.
+- [ ] Add a link from the home page to the source code repo.
+- [ ] The first time the 'i' key is introduced, it's un-greyed-out but its outline isn't color coded according to what finger you're supposed to use. I'm sure it's not just 'i' either.
+- [ ] When a prompt wraps at a space, and it's time to type that space, the usual cursor that shows what to type next is not visible.
+- [ ] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
+and add some sentences from literature that include these punctuation.
+- [ ] Add a favicon.
 
 ## Uncategorized / early history
 
