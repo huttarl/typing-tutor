@@ -678,7 +678,7 @@ function renderAvatarGrid() {
     const level = Math.min(s.level, LEVELS.length-1);
     const hasProgress = characterHasProgress(s);
     const progressText = hasProgress ? `Level ${level+1} · ${s.stars}⭐` : 'New — not started';
-    return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')">
+    return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')" ondblclick="selectAndStart('${a.id}')">
       <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
       <div class="avatar-name">${a.name}</div>
       <div class="avatar-progress">${progressText}</div>
@@ -695,6 +695,14 @@ function selectChar(id) {
   const name = ANIMALS.find(a=>a.id===id).name;
   const hasProgress = characterHasProgress(loadState(id));
   btn.textContent = (hasProgress ? 'Continue with ' : 'Start with ') + name + '!';
+}
+
+// Double-clicking a character is a shortcut for "select it, then Start" — saving
+// the trip to the Start button. (The dblclick fires after its click events, which
+// have already run selectChar, so this just adds the start step.)
+function selectAndStart(id) {
+  selectChar(id);
+  startLesson();
 }
 
 function goBack() {
