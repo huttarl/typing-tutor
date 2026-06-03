@@ -189,6 +189,12 @@ body {
 }
 
 /* finger reminder */
+/* Persistent "what this level is for" line — set once per exercise, never
+   replaced by the per-keystroke coaching below it. */
+.level-purpose {
+  font-size: 1.05rem; font-weight: 800; color: var(--text);
+  margin-bottom: .7rem; display: flex; align-items: center; gap: .5rem;
+}
 .position-hint {
   background: var(--amber-light);
   border-left: 4px solid var(--amber);
@@ -359,6 +365,7 @@ body {
     <button class="level-badge" id="level-badge" onclick="openLevelPicker()"></button>
   </div>
   <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  <div class="level-purpose" id="level-purpose"></div>
   <div class="position-hint" id="position-hint"></div>
   <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span></div>
   <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
@@ -782,6 +789,7 @@ function showExercise() {
 
   document.getElementById('lesson-title').textContent = animal.emoji + ' ' + animal.name;
   document.getElementById('level-badge').innerHTML = 'Level ' + (levelIdx+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
+  document.getElementById('level-purpose').textContent = '🎯 ' + level.label;
   document.getElementById('prog-fill').style.width = Math.round((levelIdx / LEVELS.length)*100) + '%';
   document.getElementById('stat-level').textContent = levelIdx+1;
   document.getElementById('stat-acc').textContent = '—';
