@@ -418,15 +418,30 @@ const KEY_INFO = {
   'z':{hand:'L',finger:0},'x':{hand:'L',finger:1},'c':{hand:'L',finger:2},'v':{hand:'L',finger:3},'b':{hand:'L',finger:3},
   'n':{hand:'R',finger:3},'m':{hand:'R',finger:3},',':{hand:'R',finger:2},'.':{hand:'R',finger:1},'/':{hand:'R',finger:0},
   "'":{hand:'R',finger:0},
+  // number/symbol keys reached for punctuation: '-' (right pinky) and '1' (left pinky, for '!')
+  '-':{hand:'R',finger:0},'1':{hand:'L',finger:0},
   ' ':{hand:'R',finger:4},
 };
+
+// Characters typed by holding Shift and pressing a base key. Lets the coaching,
+// hand diagram, and keyboard highlight treat shifted punctuation just like capitals.
+const SHIFT_SYMBOL = { ':':';', '"':"'", '?':'/', '!':'1' };
+
+// For a character to be typed, return { base, shift }: the physical key to press
+// and whether Shift is held. Covers letters (capitals need Shift) and punctuation.
+function shiftPair(ch) {
+  if (!ch || ch.length !== 1) return null;
+  if (ch >= 'A' && ch <= 'Z') return { base: ch.toLowerCase(), shift: true };
+  if (SHIFT_SYMBOL[ch])       return { base: SHIFT_SYMBOL[ch], shift: true };
+  return { base: ch, shift: false }; // lowercase letter, space, or an unshifted key
+}
 
 // Cumulative key sets, built up as the course progresses. Using helpers keeps
 // the LEVELS table readable and avoids copy-paste drift.
 const K_HOME    = ['f','j','d','k','s','l','a',';','g','h'];                  // full home row (incl. g,h stretch)
 const K_TOP     = K_HOME.concat(['e','i','r','u','t','y','w','o','q','p']);   // + full top row
 const K_BOTTOM  = K_TOP.concat(['c','m','v','n','b','x','z']);               // + full bottom row letters
-const K_PUNCT   = K_BOTTOM.concat([',','.']);                                // + comma, period (used in sentences)
+const K_PUNCT   = K_BOTTOM.concat([',','.',';',"'",'/','-']);                // + sentence punctuation (incl. shifted : " ? via these keys)
 
 // Levels: key-learning levels add 1-2 keys; each group ends with real-word
 // review level(s) using a curated list limited to the letters learned so far.
@@ -542,37 +557,37 @@ const WORD_BANK = [
 // (Psalm/divine-name verses use the conventional "the Lord" rendering for
 // familiarity rather than WEB's "Yahweh".)
 const SENTENCES = [
-  {text:"Jesus wept.",                                                  source:"John 11:35 (WEB)"},
-  {text:"God is love.",                                                 source:"1 John 4:8 (WEB)"},
-  {text:"God is light.",                                                source:"1 John 1:5 (WEB)"},
+  {text:"Jesus wept.", source:"John 11:35 (WEB)"},
+  {text:"God is love.", source:"1 John 4:8 (WEB)"},
+  {text:"God is light.", source:"1 John 1:5 (WEB)"},
   {text:"Memento mori.", source:"Latin: \"Remember that you must die.\""},
   {text:"Dum spiro, spero.", source:"Latin proverb: \"While I breathe, I hope.\""},
   {text:"Veni, vidi, vici.", source:"Julius Caesar: \"I came, I saw, I conquered.\""},
   {text:"Cogito, ergo sum.", source:"René Descartes: \"I think, therefore I am.\""},
-  {text:"Let there be light.",                                          source:"Genesis 1:3 (WEB)"},
+  {text:"Let there be light.", source:"Genesis 1:3 (WEB)"},
   {text:"Errare humanum est.", source:"Latin proverb: \"To err is human.\""},
   {text:"Ex nihilo nihil fit.", source:"Latin proverb: \"Nothing comes from nothing.\""},
   {text:"'Please, sir, I want some more.'", source:"Charles Dickens, Oliver Twist"},
-  {text:"The Lord is my shepherd.",                                     source:"Psalm 23:1 (WEB)"},
+  {text:"The Lord is my shepherd.", source:"Psalm 23:1 (WEB)"},
   {text:"It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, ...", source:"Charles Dickens, A Tale of Two Cities"},
-  {text:"Be still, and know that I am God.",                            source:"Psalm 46:10 (WEB)"},
-  {text:"A gentle answer turns away wrath.",                            source:"Proverbs 15:1 (WEB)"},
-  {text:"A cheerful heart is good medicine.",                           source:"Proverbs 17:22 (WEB)"},
-  {text:"She had a lively playful disposition.",                        source:"Jane Austen, Pride and Prejudice"},
-  {text:"The Lord is my light and my salvation.",                       source:"Psalm 27:1 (WEB)"},
-  {text:"Trust in the Lord with all your heart.",                       source:"Proverbs 3:5 (WEB)"},
-  {text:"She was a woman of mean understanding.",                       source:"Jane Austen, Pride and Prejudice"},
+  {text:"Be still, and know that I am God.", source:"Psalm 46:10 (WEB)"},
+  {text:"A gentle answer turns away wrath.", source:"Proverbs 15:1 (WEB)"},
+  {text:"A cheerful heart is good medicine.", source:"Proverbs 17:22 (WEB)"},
+  {text:"She had a lively playful disposition.", source:"Jane Austen, Pride and Prejudice"},
+  {text:"The Lord is my light and my salvation.", source:"Psalm 27:1 (WEB)"},
+  {text:"Trust in the Lord with all your heart.", source:"Proverbs 3:5 (WEB)"},
+  {text:"She was a woman of mean understanding.", source:"Jane Austen, Pride and Prejudice"},
   {text:"It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.", source:"Jane Austen, Pride and Prejudice"},
-  {text:"Give thanks to the Lord, for he is good.",                     source:"Psalm 107:1 (WEB)"},
+  {text:"Give thanks to the Lord, for he is good.", source:"Psalm 107:1 (WEB)"},
   {text:"We cannot command nature except by obeying her.", source:"Francis Bacon, Novum Organum"},
-  {text:"A large income is the best recipe for happiness.",             source:"Jane Austen, Mansfield Park"},
+  {text:"A large income is the best recipe for happiness.", source:"Jane Austen, Mansfield Park"},
   {text:"To observe attentively is to remember distinctly.", source:"Edgar Allan Poe, The Murders in the Rue Morgue"},
   {text:"All that we see or seem is but a dream within a dream.", source:"Edgar Allan Poe, A Dream Within a Dream"},
-  {text:"There is nothing like staying at home for real comfort.",      source:"Jane Austen, Emma"},
-  {text:"In the beginning, God created the heavens and the earth.",     source:"Genesis 1:1 (WEB)"},
-  {text:"Your word is a lamp to my feet, and a light for my path.",     source:"Psalm 119:105 (WEB)"},
+  {text:"There is nothing like staying at home for real comfort.", source:"Jane Austen, Emma"},
+  {text:"In the beginning, God created the heavens and the earth.", source:"Genesis 1:1 (WEB)"},
+  {text:"Your word is a lamp to my feet, and a light for my path.", source:"Psalm 119:105 (WEB)"},
   {text:"Men more frequently require to be reminded than informed.", source:"Samuel Johnson, The Rambler"},
-  {text:"The gentlemen pronounced him to be a fine figure of a man.",   source:"Jane Austen, Pride and Prejudice"},
+  {text:"The gentlemen pronounced him to be a fine figure of a man.", source:"Jane Austen, Pride and Prejudice"},
   {text:"The world owes all its onward impulses to men ill at ease.", source:"Nathaniel Hawthorne, The House of the Seven Gables"},
   {text:"The power of doing anything with quickness is always prized.", source:"Jane Austen, Pride and Prejudice"},
   {text:"A woman must have a thorough knowledge of music and singing.", source:"Jane Austen, Pride and Prejudice"},
@@ -812,10 +827,6 @@ function maybeSuggestBreak() {
 function clampedLevelIndex() { return Math.min(levelIndex, LEVELS.length-1); }
 function getLevel() { return LEVELS[clampedLevelIndex()]; }
 
-// Is a letter being asked for as a capital (so the student must hold Shift)?
-function isCapitalLetter(raw) {
-  return raw.length === 1 && raw !== raw.toLowerCase() && raw === raw.toUpperCase();
-}
 // Is any modal (level picker or age entry) currently mounted?
 function isModalOpen() { return document.getElementById('modal-mount').children.length > 0; }
 
@@ -966,11 +977,16 @@ function renderPrompt(typed) {
 // Friendly spoken name for a key (used in coaching sentences).
 function keyName(ch) {
   if (ch === ' ') return 'the space bar';
-  if (ch === ';') return 'the semicolon key';
-  if (ch === ',') return 'the comma key';
-  if (ch === '.') return 'the period key';
-  if (ch === "'") return 'the apostrophe key';
-  if (ch === '/') return 'the slash key';
+  if (ch === ';') return 'the semicolon';
+  if (ch === ':') return 'the colon';
+  if (ch === ',') return 'the comma';
+  if (ch === '.') return 'the period';
+  if (ch === "'") return 'the apostrophe';
+  if (ch === '"') return 'the quotation mark';
+  if (ch === '/') return 'the slash';
+  if (ch === '?') return 'the question mark';
+  if (ch === '!') return 'the exclamation mark';
+  if (ch === '-') return 'the hyphen';
   return ch.toUpperCase();
 }
 
@@ -987,9 +1003,8 @@ function renderFingerReminder(nextChar, level, levelIdx) {
   const posEl = document.getElementById('position-hint');
 
   const raw = nextChar || '';
-  const isCapital = isCapitalLetter(raw);
-  const ch = raw.length === 1 ? raw.toLowerCase() : null;
-  const info = ch ? KEY_INFO[ch] : null;
+  const pair = shiftPair(raw);              // { base, shift } or null
+  const info = pair ? KEY_INFO[pair.base] : null;
 
   // Larger, more prominent coaching on the early home-row levels; smaller later.
   const inHomeGroup = groupOf(levelIdx) === 'Home row';
@@ -1015,14 +1030,14 @@ function renderFingerReminder(nextChar, level, levelIdx) {
     el.style.background = fc + '18';
     el.style.borderLeft = '4px solid ' + fc;
 
-    if (ch === ' ') {
+    if (pair.base === ' ') {
       txt.textContent = 'Press the space bar with your thumb.';
-    } else if (isCapital) {
-      // Capital: hold Shift with the opposite hand, tap the letter with its finger.
+    } else if (pair.shift) {
+      // Capital or shifted symbol: hold Shift with the opposite hand, tap the key.
       const shiftHand = info.hand === 'L' ? 'right' : 'left';
-      txt.textContent = `Hold Shift with your ${shiftHand} pinky, then press ${raw} with your ${hand} ${fname}.`;
+      txt.textContent = `Hold Shift with your ${shiftHand} pinky, then press ${keyName(raw)} with your ${hand} ${fname}.`;
     } else {
-      txt.textContent = `Use your ${hand} ${fname} to press ${keyName(ch)}.`;
+      txt.textContent = `Use your ${hand} ${fname} to press ${keyName(raw)}.`;
     }
   } else {
     dot.style.background = '#ccc';
@@ -1078,8 +1093,9 @@ function drawHand(svgId, activeFinger, isActive) {
 }
 
 function updateHands(nextChar) {
-  const ch = nextChar ? nextChar.toLowerCase() : null;
-  const info = ch && ch !== ' ' ? KEY_INFO[ch] : (ch===' ' ? {hand:'R',finger:4} : null);
+  // Light the finger for the base key (capitals and shifted symbols included).
+  const pair = shiftPair(nextChar);
+  const info = pair ? KEY_INFO[pair.base] : null;
   const leftActive  = info && info.hand==='L';
   const rightActive = info && info.hand==='R';
   drawHand('hand-left',  leftActive  ? info.finger : -1, leftActive);
@@ -1106,12 +1122,13 @@ function renderKeyboard(level, nextChar) {
   const homeRow = new Set(['a','s','d','f','g','h','j','k','l',';']);
   const wrap = document.getElementById('keyboard');
 
-  // Determine the current key + whether Shift is needed (capital letters)
+  // Determine the current base key + whether Shift is needed (capitals or shifted symbols)
   const raw = nextChar || '';
-  const needsShift = isCapitalLetter(raw);
-  const curLower = raw.toLowerCase();
-  const curInfo = KEY_INFO[curLower];
-  // Use the Shift key on the OPPOSITE hand from the letter being typed.
+  const pair = shiftPair(raw);              // { base, shift } or null
+  const needsShift = pair ? pair.shift : false;
+  const curBase = pair ? pair.base : '';
+  const curInfo = pair ? KEY_INFO[curBase] : null;
+  // Use the Shift key on the OPPOSITE hand from the key being pressed.
   const shiftSide = curInfo ? (curInfo.hand === 'L' ? 'rshift' : 'lshift') : null;
 
   const rows = KB_ROWS.map(row => {
@@ -1132,7 +1149,7 @@ function renderKeyboard(level, nextChar) {
       const info = KEY_INFO[k];
       const fi = info ? info.finger : 0;
       const locked = !unlockedSet.has(k);
-      const isCurrent = k === curLower && curLower.length === 1;
+      const isCurrent = k === curBase && curBase.length === 1;
       const isHome = homeRow.has(k) && !locked;
       let cls = 'key' + (locked?' locked':'') + (isCurrent?' current':'') + (isHome?' home-row':'');
       const fattr = !locked ? `data-finger="${fi}"` : '';
