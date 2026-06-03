@@ -233,6 +233,11 @@ body {
 .ch.correct { color: var(--green); }
 .ch.wrong { color: var(--red); text-decoration: underline wavy var(--red); }
 .ch.cursor { border-bottom: 3px solid var(--accent); color: var(--text); }
+/* Source attribution shown under the prompt on sentence levels (not typed). */
+.source-cite {
+  font-size: .8rem; color: var(--text2); font-style: italic;
+  text-align: right; margin: -.6rem 0 .85rem; min-height: 1em;
+}
 
 /* hidden input */
 #typing-input {
@@ -357,6 +362,7 @@ body {
   <div class="position-hint" id="position-hint"></div>
   <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span></div>
   <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
+  <div class="source-cite" id="source-cite"></div>
   <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
   <div class="kb-wrap" id="keyboard"></div>
   <div class="kb-legend" id="kb-legend"></div>
@@ -517,46 +523,36 @@ const WORD_BANK = [
 ];
 
 // Complete sentences from Austen, Dickens, and the Bible (World English Bible,
-// public domain, modern English). All are full sentences, and the list is kept
-// pre-sorted shortest → longest so sentence practice ramps up gradually.
+// public domain, modern English). Every entry has a verified `source`, shown
+// under the prompt (not typed); don't add a sentence without one. The list is
+// kept pre-sorted shortest → longest so sentence practice ramps up gradually.
 // (Psalm/divine-name verses use the conventional "the Lord" rendering for
 // familiarity rather than WEB's "Yahweh".)
 const SENTENCES = [
-  "Jesus wept.",
-  "God is love.",
-  "God is light.",
-  "Let there be light.",
-  "Oliver asked for more.",
-  "The Lord is my shepherd.",
-  "It was the best of times.",
-  "It was a bright cold day.",
-  "She spoke with great warmth.",
-  "His pride never deserted him.",
-  "There was truth in his looks.",
-  "Be still, and know that I am God.",
-  "A gentle answer turns away wrath.",
-  "A cheerful heart is good medicine.",
-  "He was a man of very large fortune.",
-  "She had a lively playful disposition.",
-  "She was always of service to someone.",
-  "The Lord is my light and my salvation.",
-  "Trust in the Lord with all your heart.",
-  "She was a woman of mean understanding.",
-  "It is a truth universally acknowledged.",
-  "Give thanks to the Lord, for he is good.",
-  "He had a great deal of time on his hands.",
-  "He had not been long in the neighbourhood.",
-  "The evening was not without its satisfaction.",
-  "A large income is the best recipe for happiness.",
-  "Miss Bennet received her summons with great delight.",
-  "She was not without hope that something would turn up.",
-  "There is nothing like staying at home for real comfort.",
-  "In the beginning, God created the heavens and the earth.",
-  "Your word is a lamp to my feet, and a light for my path.",
-  "The gentlemen pronounced him to be a fine figure of a man.",
-  "The power of doing anything with quickness is always prized.",
-  "A woman must have a thorough knowledge of music and singing.",
-  "To be fond of dancing was a certain step towards falling in love.",
+  {text:"Jesus wept.",                                                  source:"John 11:35 (WEB)"},
+  {text:"God is love.",                                                 source:"1 John 4:8 (WEB)"},
+  {text:"God is light.",                                                source:"1 John 1:5 (WEB)"},
+  {text:"Let there be light.",                                          source:"Genesis 1:3 (WEB)"},
+  {text:"Oliver asked for more.",                                       source:"Charles Dickens, Oliver Twist"},
+  {text:"The Lord is my shepherd.",                                     source:"Psalm 23:1 (WEB)"},
+  {text:"It was the best of times.",                                    source:"Charles Dickens, A Tale of Two Cities"},
+  {text:"Be still, and know that I am God.",                            source:"Psalm 46:10 (WEB)"},
+  {text:"A gentle answer turns away wrath.",                            source:"Proverbs 15:1 (WEB)"},
+  {text:"A cheerful heart is good medicine.",                           source:"Proverbs 17:22 (WEB)"},
+  {text:"She had a lively playful disposition.",                        source:"Jane Austen, Pride and Prejudice"},
+  {text:"The Lord is my light and my salvation.",                       source:"Psalm 27:1 (WEB)"},
+  {text:"Trust in the Lord with all your heart.",                       source:"Proverbs 3:5 (WEB)"},
+  {text:"She was a woman of mean understanding.",                       source:"Jane Austen, Pride and Prejudice"},
+  {text:"It is a truth universally acknowledged.",                      source:"Jane Austen, Pride and Prejudice"},
+  {text:"Give thanks to the Lord, for he is good.",                     source:"Psalm 107:1 (WEB)"},
+  {text:"A large income is the best recipe for happiness.",             source:"Jane Austen, Mansfield Park"},
+  {text:"There is nothing like staying at home for real comfort.",      source:"Jane Austen, Emma"},
+  {text:"In the beginning, God created the heavens and the earth.",     source:"Genesis 1:1 (WEB)"},
+  {text:"Your word is a lamp to my feet, and a light for my path.",     source:"Psalm 119:105 (WEB)"},
+  {text:"The gentlemen pronounced him to be a fine figure of a man.",   source:"Jane Austen, Pride and Prejudice"},
+  {text:"The power of doing anything with quickness is always prized.", source:"Jane Austen, Pride and Prejudice"},
+  {text:"A woman must have a thorough knowledge of music and singing.", source:"Jane Austen, Pride and Prejudice"},
+  {text:"To be fond of dancing was a certain step towards falling in love.", source:"Jane Austen, Pride and Prejudice"},
 ];
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
@@ -566,6 +562,7 @@ let completedLevels = new Set();   // indices this character has completed
 let exercisesDoneThisLevel = 0;
 let totalStars = 0;
 let currentPrompt = '';
+let currentSource = '';   // attribution for the current sentence ('' if none)
 let startTime = null;
 let exerciseActive = false;
 let settings = { lockLevels: true, breakReminders: true };
@@ -806,6 +803,9 @@ function showExercise() {
   inp.disabled = false;
   inp.focus();
 
+  // Source attribution (sentence levels only; "— Author, Title", blank otherwise).
+  document.getElementById('source-cite').textContent = currentSource ? '— ' + currentSource : '';
+
   const firstChar = currentPrompt[0] || '';
   renderPrompt('');
   renderFingerReminder(firstChar, level, levelIdx);
@@ -836,6 +836,7 @@ function promptLineCapacity() {
 
 function generatePrompt(level, levelIdx) {
   const keys = level.keys.filter(k => /[a-z]/.test(k));
+  currentSource = ''; // only sentence levels set an attribution
 
   // ── Sentence levels: progress shortest → longest across the sentence levels ──
   if (level.sentenceLevel) {
@@ -846,7 +847,9 @@ function generatePrompt(level, levelIdx) {
     const lo = Math.floor((tier / tierCount) * n);
     const hi = Math.floor(((tier + 1) / tierCount) * n);
     const slice = SENTENCES.slice(lo, Math.max(hi, lo + 1));
-    return slice[Math.floor(Math.random() * slice.length)];
+    const chosen = slice[Math.floor(Math.random() * slice.length)];
+    currentSource = chosen.source || '';
+    return chosen.text;
   }
 
   // ── Group word-review levels: use the pre-generated list for this group ──

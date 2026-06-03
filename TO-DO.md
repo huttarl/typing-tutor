@@ -33,8 +33,9 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       being replaced by other instructions during typing.)
 - [ ] Increased the word bank to include more variety. Use classic authors / poets
 such as Shakespeare, Hawthorne, Poe (but make sure the spelling is correct by modern standards).
+- [ ] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period.
 - [ ] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
-- [ ] When practicing actual sentences or longer passages from literature, cite the title
+- [x] When practicing actual sentences or longer passages from literature, display the title
 and author. (Not sure if the student should be asked to type these.)
 
 ## Features
@@ -83,9 +84,9 @@ and author. (Not sure if the student should be asked to type these.)
 - [x] Character grid distinguishes started vs. unused characters.
 - [x] Enter advances to the next exercise.
 - [x] Save-progress hint; "Continue with" vs "Start with" button text.
-- [ ] Rename curLi() and getLv() to be more readable, e.g. currentLevelIndex (if that's what it means) and getLevel.
-- [ ]Allow the beginning flow of selecting a character and starting with that character to be accomplished with a double-click, instead of having to click in two different places (while still allowing the current method of selecting the character and then clicking the Start button).
+- [x] Rename curLi() and getLv() to be more readable, e.g. currentLevelIndex (if that's what it means) and getLevel.
+- [x]Allow the beginning flow of selecting a character and starting with that character to be accomplished with a double-click, instead of having to click in two different places (while still allowing the current method of selecting the character and then clicking the Start button).
 - [ ] Maybe split out the js code from the HTML file? That would simplify code changes, but
-would also degrade portability.
-- [ ] Adjust color-coding of fingers to avoid the pinkish color which is too close to red and suggests a problem.
+would also degrade portability. Leave it alone for now.
+- [x] Adjust color-coding of fingers to avoid the pinkish color which is too close to red and suggests a problem.
 
