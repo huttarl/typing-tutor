@@ -226,7 +226,7 @@ body {
   letter-spacing: .12em;
   line-height: 1.7;
   min-height: 70px;
-  word-break: break-all;
+  overflow-wrap: break-word; /* wrap at spaces; only break inside a word if it alone exceeds the line */
   margin-bottom: 1rem;
 }
 .ch { color: var(--text3); }
@@ -907,7 +907,9 @@ function renderPrompt(typed) {
     let cls = 'ch';
     if (i < typed.length) cls += typed[i]===ch ? ' correct' : ' wrong';
     else if (i === typed.length) cls += ' cursor';
-    return `<span class="${cls}">${ch===' '?'&nbsp;':ch}</span>`;
+    // Render spaces as a real (breakable) space so lines wrap between words,
+    // not mid-word. Contiguous letter spans stay together as one word.
+    return `<span class="${cls}">${ch}</span>`;
   }).join('');
 }
 
