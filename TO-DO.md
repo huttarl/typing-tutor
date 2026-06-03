@@ -17,14 +17,14 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       comma and period relatively early; then apostrophe, etc.). Note: comma and
       period are already typeable in the sentence levels, but are not yet
       *taught* with their own drill/finger introduction.
-- [ ] **Teach the Shift key explicitly** — decide when (after lowercase letters
+- [x] **Teach the Shift key explicitly** — decide when (after lowercase letters
       are solid?) and how (dedicated capital-letter levels; teach the
       opposite-hand Shift rule). Note: capitals already appear in sentences and
       the coaching/keyboard already highlight Shift, but there is no dedicated
       Shift-teaching level yet.
 - [ ] **Curated Bible passages.** Allow focusing sentence practice on specific
       passages the family wants to learn.
-- [ ] **Show purpose of level.** At top of screen during exercises, show a brief
+- [x] **Show purpose of level.** At top of screen during exercises, show a brief
       purpose statement like "Add v and n" or "practice home-row words" or "review
       letters from top two rows." This helps motivation by connecting activity to progress.
       This purpose statement should be separate from, and not replaced by, the
@@ -33,7 +33,7 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       being replaced by other instructions during typing.)
 - [ ] Increased the word bank to include more variety. Use classic authors / poets
 such as Shakespeare, Hawthorne, Poe (but make sure the spelling is correct by modern standards).
-- [ ] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period.
+- [ ] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period. This will require checking quotes.
 - [ ] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
 - [x] When practicing actual sentences or longer passages from literature, display the title
 and author. (Not sure if the student should be asked to type these.)
@@ -62,8 +62,10 @@ and author. (Not sure if the student should be asked to type these.)
       `https://keepandroidopen.org/banner.js`; if so, weigh its access to the
       page/localStorage and its conflict with the offline goal (perhaps only on
       a hosted copy, not the offline app the children use).
-- [ ] Words from great books shouldn't be stripped of their capitalization.
+- [x] Words from great books shouldn't be stripped of their capitalization.
       And words that require punctuation, like "Mrs.", shouldn't be stripped of it.
+- [ ] When doing whole sentences and passages, make sure not to repeat the same passage
+      twice in a row.
 
 ## Uncategorized / early history
 

@@ -460,7 +460,7 @@ const LEVELS = [
   {keys:K_BOTTOM, label:'Bottom + home row words', wordKey:'bottomHome'},
 
   // ── Real words (mixed, from the full bank) — the only level that reads wordLevel ──
-  {keys:K_PUNCT, label:'Real words from great books', wordLevel:true},
+  {keys:K_PUNCT, label:'Real words', wordLevel:true},
 
   // ── Real sentences (shortest → longest) ──
   {keys:K_PUNCT, label:'Short real sentences', sentenceLevel:true},
@@ -508,6 +508,9 @@ const LEVEL_GROUPS = [
 
 // Large word bank filtered by available keys at use time. Order is not
 // meaningful (selection is random), and entries are unique — no duplicates.
+// Proper nouns keep their capital (Darcy, Scrooge) and titles keep their period
+// (Mr., Mrs.); these only appear on the real-words level, where every letter plus
+// the period is available, and capitals are typed with Shift.
 const WORD_BANK = [
   'the','of','and','a','to','in','was','he','she','had','her','that',
   'it','his','is','with','as','for','on','not','but','be','at','by',
@@ -524,9 +527,9 @@ const WORD_BANK = [
   'kind','mind','heart','life','place','world','hand','name','home','work','friend','father',
   'mother','sister','brother','children','husband','always','often','still','soon','once','between','through',
   'something','everything','indeed','replied','however','whether','another','together','general','morning','evening','manner',
-  'matter','family','feeling','herself','whatever','certainly','understood','immediately','particularly','unfortunately','fortunately','mr',
-  'mrs','miss','asked','answered','exclaimed','continued','elizabeth','darcy','jane','bingley','wickham','bennet',
-  'collins','oliver','pip','esther','jarndyce','scrooge','copperfield',
+  'matter','family','feeling','herself','whatever','certainly','understood','immediately','particularly','unfortunately','fortunately','Mr.',
+  'Mrs.','Miss','asked','answered','exclaimed','continued','Elizabeth','Darcy','Jane','Bingley','Wickham','Bennet',
+  'Collins','Oliver','Pip','Esther','Jarndyce','Scrooge','Copperfield',
 ];
 
 // Complete sentences from Austen, Dickens, and the Bible (World English Bible,
@@ -877,8 +880,12 @@ function generatePrompt(level, levelIdx) {
 
   // ── Mixed real-words level: draw from the full bank, filtered to learned keys ──
   if (level.wordLevel) {
-    const avail = new Set(keys.concat([' ']));
-    const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c)));
+    // A word is typeable if every character is reachable with the learned keys:
+    // capitals via Shift (so compare the lowercased letter), plus any learned
+    // punctuation (e.g. the period in "Mr."). Use level.keys directly so the
+    // punctuation isn't filtered out the way the letters-only `keys` would.
+    const avail = new Set(level.keys.concat([' ']));
+    const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c.toLowerCase())));
     if (pool.length >= 3) {
       const cap = promptLineCapacity();
       const target = Math.min(28 + Math.floor(Math.random()*14), cap);
