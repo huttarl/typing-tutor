@@ -1232,8 +1232,6 @@ let resetConfirmShown = false; // is the in-picker "delete progress?" confirm sh
 
 function openLevelPicker() {
   const li = Math.min(levelIndex, LEVELS.length-1);
-  const animal = ANIMALS.find(a => a.id === currentChar);
-  const who = animal ? `${animal.emoji} ${animal.name}` : 'this character';
   const groupsHtml = LEVEL_GROUPS.map(group => {
     const items = [];
     for (let i = group.start; i <= group.end && i < LEVELS.length; i++) {
@@ -1283,17 +1281,7 @@ function openLevelPicker() {
           ? 'Break timing adapts to the student\u2019s age (about 5\u201315 minutes).'
           : 'Break reminders are off.'}</div>
         ${groupsHtml}
-        <div class="reset-zone">
-          ${resetConfirmShown ? `
-            <div class="reset-confirm">
-              <span class="reset-confirm-text"><strong>Delete all of ${who}'s progress?</strong> This can't be undone.</span>
-              <div class="reset-confirm-btns">
-                <button class="btn danger" onclick="confirmResetProgress()">Delete</button>
-                <button class="btn" onclick="cancelResetProgress()">Cancel</button>
-              </div>
-            </div>`
-          : `<button class="reset-link" onclick="requestResetProgress()">Reset ${who}'s progress…</button>`}
-        </div>
+        <div class="reset-zone">${resetZoneInner()}</div>
       </div>
     </div>`;
 }
@@ -1301,8 +1289,33 @@ function openLevelPicker() {
 // Reset (delete) the active character's saved progress. Lives at the bottom of
 // the level picker, behind an inline two-step confirm, so a student is unlikely
 // to trigger it by accident. Only clears this character's key, not global settings.
-function requestResetProgress() { resetConfirmShown = true; openLevelPicker(); }
-function cancelResetProgress() { resetConfirmShown = false; openLevelPicker(); }
+function resetZoneInner() {
+  const animal = ANIMALS.find(a => a.id === currentChar);
+  const who = animal ? `${animal.emoji} ${animal.name}` : 'this character';
+  return resetConfirmShown ? `
+    <div class="reset-confirm">
+      <span class="reset-confirm-text"><strong>Delete all of ${who}'s progress?</strong> This can't be undone.</span>
+      <div class="reset-confirm-btns">
+        <button class="btn danger" onclick="confirmResetProgress()">Delete</button>
+        <button class="btn" onclick="cancelResetProgress()">Cancel</button>
+      </div>
+    </div>`
+    : `<button class="reset-link" onclick="requestResetProgress()">Reset ${who}'s progress…</button>`;
+}
+// Swap only the reset zone in place (keeps the picker's scroll position stable).
+function updateResetZone() {
+  const z = document.querySelector('.reset-zone');
+  if (z) z.innerHTML = resetZoneInner();
+}
+function requestResetProgress() {
+  resetConfirmShown = true;
+  updateResetZone();
+  // Confirm panel is taller than the link; make sure its buttons aren't clipped.
+  // block:'nearest' is a no-op when already fully visible, so scroll stays stable.
+  const c = document.querySelector('.reset-confirm');
+  if (c) c.scrollIntoView({ block: 'nearest' });
+}
+function cancelResetProgress() { resetConfirmShown = false; updateResetZone(); }
 function confirmResetProgress() {
   try { localStorage.removeItem('tt2_' + currentChar); } catch (e) {}
   resetConfirmShown = false;
