@@ -787,6 +787,26 @@ function showExercise() {
   document.getElementById('result-area').innerHTML = '';
 }
 
+// How many monospace characters fit on ONE line of the prompt box right now.
+// Measured from the live box so it adapts to the window/device width; used to
+// keep generated drills/word-rows from wrapping. (Sentences are fixed text and
+// may still wrap — that's acceptable for reading material.)
+function promptLineCapacity() {
+  const box = document.getElementById('prompt-box');
+  if (!box || !box.clientWidth) return 34; // sensible fallback before layout
+  const cs = getComputedStyle(box);
+  const inner = box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const probe = document.createElement('span');
+  probe.textContent = 'mmmmmmmmmm'; // 10 chars; monospace ⇒ every char is equal width
+  probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;`
+    + `font-family:${cs.fontFamily};font-size:${cs.fontSize};letter-spacing:${cs.letterSpacing}`;
+  box.appendChild(probe);
+  const per = probe.getBoundingClientRect().width / 10;
+  box.removeChild(probe);
+  if (!per) return 34;
+  return Math.max(10, Math.floor(inner / per) - 1); // -1 char of safety margin
+}
+
 function generatePrompt(lv, li) {
   const keys = lv.keys.filter(k => /[a-z]/.test(k));
 
@@ -805,12 +825,13 @@ function generatePrompt(lv, li) {
   // ── Group word-review levels: use the pre-generated list for this group ──
   if (lv.wordKey && GROUP_WORDS[lv.wordKey]) {
     const list = GROUP_WORDS[lv.wordKey];
-    let words = [], len = 0, target = 22 + Math.floor(Math.random()*12);
-    let attempts = 0;
+    const cap = promptLineCapacity();
+    const target = Math.min(22 + Math.floor(Math.random()*12), cap);
+    let words = [], len = 0, attempts = 0;
     while (len < target && attempts < 200) {
       attempts++;
       const w = list[Math.floor(Math.random()*list.length)];
-      if (len + w.length + 1 <= target + 4) { words.push(w); len += w.length + 1; }
+      if (len + w.length + 1 <= cap + 1) { words.push(w); len += w.length + 1; } // +1: final join has no trailing space
     }
     if (words.length >= 2) return words.join(' ');
     return list.slice(0, 4).join(' ');
@@ -821,12 +842,13 @@ function generatePrompt(lv, li) {
     const avail = new Set(keys.concat([' ']));
     const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c)));
     if (pool.length >= 3) {
-      let words = [], len = 0, target = 28 + Math.floor(Math.random()*14);
-      let attempts = 0;
+      const cap = promptLineCapacity();
+      const target = Math.min(28 + Math.floor(Math.random()*14), cap);
+      let words = [], len = 0, attempts = 0;
       while (len < target && attempts < 200) {
         attempts++;
         const w = pool[Math.floor(Math.random()*pool.length)];
-        if (len + w.length + 1 <= target + 4) { words.push(w); len += w.length + 1; }
+        if (len + w.length + 1 <= cap + 1) { words.push(w); len += w.length + 1; }
       }
       if (words.length >= 2) return words.join(' ');
     }
@@ -834,13 +856,17 @@ function generatePrompt(lv, li) {
 
   // ── Drill levels: randomized letter/syllable chunks from learned keys ──
   const hasSpace = li >= 1;
-  const target = 24 + Math.floor(Math.random()*12);
+  const cap = promptLineCapacity();
+  // Desired length (for variety), but never longer than one line fits.
+  const target = Math.min(24 + Math.floor(Math.random()*12), cap);
   let s = '';
-  while (s.replace(/ /g,'').length < target) {
+  while (true) {
     const len = 2 + Math.floor(Math.random()*3);
     const chunk = Array.from({length:len}, ()=>keys[Math.floor(Math.random()*keys.length)]).join('');
-    if (s) s += hasSpace ? ' ' : '';
-    s += chunk;
+    const sep = (s && hasSpace) ? ' ' : '';
+    if (s.length + sep.length + chunk.length > cap) break; // stop before it would wrap
+    s += sep + chunk;
+    if (s.replace(/ /g,'').length >= target) break;        // reached desired length
   }
   return s.trim();
 }
