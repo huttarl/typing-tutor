@@ -27,8 +27,8 @@
   --red-light: #fee2e2;
   --amber: #f59e0b;
   --amber-light: #fef3c7;
-  --finger0: #6c63ff; /* pinky */
-  --finger1: #e85d9e; /* ring */
+  --finger0: #0050c0; /* pinky */
+  --finger1: #a000c0; /* ring */
   --finger2: #f59e0b; /* middle */
   --finger3: #22c55e; /* index */
   --thumb: #64b5f6;
@@ -388,9 +388,11 @@ const ANIMALS = [
 
 // finger: 0=pinky,1=ring,2=middle,3=index (left or right), 4=thumb
 // hand: 'L' or 'R'
-// Indexed by finger number above. Colors match the --finger0..3 / --thumb CSS
-// variables so the JS-drawn hands, keyboard, and legend agree with the CSS keys.
-const FINGER_COLORS = ['#6c63ff','#e85d9e','#f59e0b','#22c55e','#64b5f6'];
+// Finger colors live in ONE place — the --finger0..3 / --thumb CSS variables in
+// :root — and are read here (indexed by finger number above) so the JS-drawn
+// hands, current-key highlight, and legend can't drift from the CSS-styled keys.
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const FINGER_COLORS = ['--finger0','--finger1','--finger2','--finger3','--thumb'].map(cssVar);
 const FINGER_NAMES  = ['pinky','ring finger','middle finger','index finger','thumb'];
 const KEY_INFO = {
   // top row
