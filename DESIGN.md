@@ -37,8 +37,9 @@ Everything lives in `typing-tutor.html`:
 - **`K_HOME` / `K_TOP` / `K_BOTTOM` / `K_PUNCT`** — cumulative key sets, built
   up with `.concat()` so the level table stays readable and consistent.
 - **`LEVELS`** — ordered array; each level has the `keys` available, a `label`,
-  and flags: `wordLevel`, `wordKey` (which `GROUP_WORDS` list), `sentenceLevel`,
-  `phrases` (a curated list for a punctuation-teaching level), `showWpm`,
+  and flags: `wordLevel` (draw from `WORD_BANK`), `allowCaps` (let a `wordLevel`
+  include capitalized words), `wordKey` (which `GROUP_WORDS` list), `sentenceLevel`,
+  `phrases` (a curated list for a capitals/punctuation-teaching level), `showWpm`,
   `wpmStars`.
 - **`GROUP_WORDS`** — pre-generated, curated word lists per review level,
   restricted to the letters learned by that point. Keys: `home`, `topOnly`,
@@ -66,19 +67,26 @@ matches how touch typing is taught. The physical rows are grouped:
    a *top + home* word level. (Many words use only `q w e r t y u i o p`.)
 3. **Bottom row** — V N, C M, B, X Z. Bottom-row-only words are impossible, so
    the review level uses *home + bottom* letters. Bottom row is taught last.
-4. **Capitals** — a dedicated Shift lesson (curated `phrases` of capitalized
-   words), so the opposite-hand Shift rule is taught before capitals are needed.
-5. **Real words** — mixed vocabulary from the full bank. Placed after Capitals
-   because proper nouns (`Darcy`, `Scrooge`) need Shift and `Mr.`/`Mrs.` need the
-   period; its key set is letters + `.` only.
+4. **Mixed words** — common vocabulary from `WORD_BANK`. It comes before the
+   Shift and punctuation lessons, so it must stay all-lowercase: its key set has
+   no punctuation and it omits `allowCaps`, so the filter drops any word with a
+   capital (`Darcy`) or a mark it can't yet type (`Mr.`).
+5. **Capitals** — a dedicated Shift lesson (curated `phrases` of capitalized
+   words, spanning both Shift keys), taught before capitals are needed downstream.
 6. **Punctuation** — the common marks taught a few at a time, each level via a
-   curated `phrases` list (see Data model): comma/period, apostrophe (`can't`,
-   `men's`), question/exclamation, quotation marks (dialogue), hyphen, then
+   curated `phrases` list (see Data model): comma/period (which also practices the
+   abbreviations `Mr.`/`Mrs.`), apostrophe (`can't`, `men's`),
+   question/exclamation, quotation marks (dialogue), hyphen, then
    colon/semicolon/slash. Cumulative `K_PUNCT_1..4` key sets unlock the marks
    progressively; shifted marks (`" ? ! :`) ride on a base key (`' / 1 ;`) and
    are coached with the opposite-hand Shift, just like capitals.
 7. **Real sentences** — three levels, drawing progressively longer sentences;
    WPM appears on the 2nd and counts toward the score on the 3rd.
+
+Proper nouns (`Darcy`, `Scrooge`, months, places like `United States`) are drilled
+as Shift practice in the Capitals lesson — multi-word names exercise Shift several
+times in a row. The `WORD_BANK` keeps its capitalized entries too, but the mixed-word
+filter excludes them (no `allowCaps` level yet); they're available for a future one.
 
 Word-review lists were verified by script so that (a) every word is typeable
 with the letters learned by that level, and (b) each list actually exercises the

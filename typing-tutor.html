@@ -483,9 +483,9 @@ const LEVELS = [
   {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)'},
   {keys:K_BOTTOM, label:'Bottom + home row words', wordKey:'bottomHome'},
 
-  // ── Mixed words (mixed from the full bank). Needs capitals (Darcy, Scrooge) and
-  //    the period (Mr., Mrs.), so it follows the capitals level. The only level
-  //    that reads wordLevel. ──
+  // ── Mixed words: common words from WORD_BANK. No allowCaps and no punctuation
+  //    in its key set, so it stays all-lowercase — fine before the Shift and
+  //    punctuation lessons that follow. ──
   {keys:K_BOTTOM, label:'Mixed words', wordLevel:true},
 
   // ── Capitals (teach the Shift key: hold it with the hand opposite the letter) ──
@@ -495,14 +495,21 @@ const LEVELS = [
     'Frog', 'Box', 'Web', 'Echo', 'Apple', 'Water', 'Eagle', 'Tiger', 'Queen', 'Robin', 'Grape',
     'Cloud', 'Stone', 'Grace', 'Hat', 'Hill', 'Hand', 'Home', 'Honey', 'Iron', 'Island', 'Jump',
     'King', 'Kite', 'Lion', 'Lake', 'Light', 'Moon', 'Music', 'Night', 'North', 'Name', 'Ocean',
-    'Owl', 'Pony', 'Peace', 'Uncle', 'Year', 'Yellow', 'James', 'Mary', 'London', 'Monday'] },
+    'Owl', 'Pony', 'Peace', 'Uncle', 'Year', 'Yellow', 'James', 'Mary', 'London', 'Monday',
+    // Proper nouns: why we capitalize. Names from the books, months, and places —
+    // including multi-word names that exercise Shift several times in a row.
+    'Darcy', 'Scrooge', 'Oliver', 'Elizabeth', 'Jane', 'Pip', 'Bennet', 'Bingley', 'Esther', 'Wickham',
+    'July', 'November', 'Charlotte', 'China', 'Antarctica',
+    'United States', 'North Carolina', 'the North Sea'] },
 
   // ── Punctuation group (all letters known; teach a few marks at a time) ──
   {keys:K_PUNCT_1, label:'Comma and period', phrases:[
     'ask, add, all.', 'far, near, here.', 'this, that, the other.', 'one, two, three.',
     'come, go, stay.', 'up, down, all around.', 'win, lose, or draw.', 'now, soon, later.',
     'in, out, and about.', 'red, green, blue.', 'left, right, center.', 'yes, no, maybe.',
-    'me, you, and them.', 'slow, then fast.', 'first, next, last.', 'here, there, everywhere.'] },
+    'me, you, and them.', 'slow, then fast.', 'first, next, last.', 'here, there, everywhere.',
+    // The period also ends abbreviations; capitals were taught the level before.
+    'Mr.', 'Mrs.', 'Mr. and Mrs.', 'Dr.', 'St.'] },
   {keys:K_PUNCT_2, label:"Apostrophe — can't, it's, men's", phrases:[
     "can't", "don't", "won't", "isn't", "didn't", "wasn't", "couldn't", "wouldn't", "shouldn't",
     // Include homophones without apostrophes, to remind students of the contrast.
@@ -574,11 +581,14 @@ const LEVEL_GROUPS = [
   {label: 'Real sentences', start: 26, end: 28},
 ];
 
-// Large word bank filtered by available keys at use time. Order is not
-// meaningful (selection is random), and entries are unique — no duplicates.
-// Proper nouns keep their capital (Darcy, Scrooge) and titles keep their period
-// (Mr., Mrs.); these only appear on the real-words level, where every letter plus
-// the period is available, and capitals are typed with Shift.
+// Large word bank for the mixed-word level(s). Selection is random, so order is
+// not meaningful, and entries are unique. Words keep correct casing and
+// punctuation: proper nouns are capitalized (Darcy, Scrooge) and titles keep
+// their period (Mr., Mrs.). A word only surfaces where its characters are
+// typeable — capitalized entries need a level with `allowCaps`, and period
+// entries need the period key — so the all-lowercase "Mixed words" level shows
+// only the plain words. (The capitalized names are currently unused; they await
+// a capitals-allowing word level.)
 const WORD_BANK = [
   'the','of','and','a','to','in','was','he','she','had','her','that',
   'it','his','is','with','as','for','on','not','but','be','at','by',
@@ -991,14 +1001,16 @@ function generatePrompt(level, levelIdx) {
     return list.slice(0, 4).join(' ');
   }
 
-  // ── Mixed real-words level: draw from the full bank, filtered to learned keys ──
+  // ── Mixed-word level: draw from the full bank, filtered to typeable words ──
   if (level.wordLevel) {
-    // A word is typeable if every character is reachable with the learned keys:
-    // capitals via Shift (so compare the lowercased letter), plus any learned
-    // punctuation (e.g. the period in "Mr."). Use level.keys directly so the
-    // punctuation isn't filtered out the way the letters-only `keys` would.
+    // A word is usable if every character is reachable with the learned keys
+    // (compare the lowercased letter, since a capital is just Shift + that key).
+    // Words with capitals are excluded unless the level sets allowCaps — so a
+    // level placed before the Shift lesson stays all-lowercase.
     const avail = new Set(level.keys.concat([' ']));
-    const pool = WORD_BANK.filter(w => w.split('').every(c => avail.has(c.toLowerCase())));
+    const pool = WORD_BANK.filter(w =>
+      (level.allowCaps || w === w.toLowerCase()) &&
+      w.split('').every(c => avail.has(c.toLowerCase())));
     if (pool.length >= 3) {
       const cap = promptLineCapacity();
       const target = Math.min(28 + Math.floor(Math.random()*14), cap);

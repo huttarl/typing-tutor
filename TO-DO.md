@@ -13,7 +13,7 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       age-appropriate mark (~5 min under age 8, ~10 min ages 8–11, ~15 min age
       12+). Age captured once per character (stored as birth year); toggleable
       via the level picker; break shown only at exercise boundaries.
-- [ ] **Teach punctuation keys** at pedagogically appropriate points (e.g.
+- [x] **Teach punctuation keys** at pedagogically appropriate points (e.g.
       comma and period relatively early; then apostrophe, etc.). Note: comma and
       period are already typeable in the sentence levels, but are not yet
       *taught* with their own drill/finger introduction.
@@ -33,7 +33,7 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       being replaced by other instructions during typing.)
 - [ ] Increased the word bank to include more variety. Use classic authors / poets
 such as Shakespeare, Hawthorne, Poe (but make sure the spelling is correct by modern standards).
-- [ ] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period. This will require checking quotes.
+- [x] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period. This will require checking quotes.
 - [ ] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
 - [x] When practicing actual sentences or longer passages from literature, display the title
 and author. (Not sure if the student should be asked to type these.)
@@ -76,13 +76,16 @@ exercise with 3 stars.
 - [ ] Add a link from the home page to the source code repo.
 - [ ] The first time the 'i' key is introduced, it's un-greyed-out but its outline isn't color coded according to what finger you're supposed to use. I'm sure it's not just 'i' either.
 - [ ] When a prompt wraps at a space, and it's time to type that space, the usual cursor that shows what to type next is not visible.
-- [ ] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
+- [x] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
 and add some sentences from literature that include these punctuation.
 - [x] Add a favicon.
 - [ ] The "Bottom + home row words" level includes some words with letters from the top row, and some words with
       only one or zero letters from the bottom row. Instead, the words in this level should not include letters from the top row
       at all, and should include at least two letters from the bottom row.
-- [ ] Put the "real words" level before the punctuation level.
+- [x] Put the "real words" (now "Mixed words") level before the punctuation level.
+      It comes before the Capitals lesson too, so it's kept all-lowercase via the
+      `allowCaps` filter and a no-punctuation key set; `Mr.`/`Mrs.` are practiced
+      on the Comma-and-period level instead.
 - [ ] Save vertical space by:
       - shortening the hand diagrams; only the fingers really matter.
       - Getting rid of the bottom box:
