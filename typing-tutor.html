@@ -483,6 +483,20 @@ const LEVELS = [
   {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)'},
   {keys:K_BOTTOM, label:'Bottom + home row words', wordKey:'bottomHome'},
 
+  // ── Capitals (teach the Shift key: hold it with the hand opposite the letter) ──
+  {keys:K_BOTTOM, label:'Capital letters — hold Shift', phrases:[
+    'The', 'And', 'But', 'Cat', 'Dog', 'Sun', 'Tree', 'Book', 'Star', 'Fish', 'Bird', 'Gold',
+    'Wind', 'Fire', 'Rose', 'Rain', 'Snow', 'Bell', 'Ship', 'Road', 'Game', 'Door', 'Cake',
+    'Frog', 'Box', 'Web', 'Echo', 'Apple', 'Water', 'Eagle', 'Tiger', 'Queen', 'Robin', 'Grape',
+    'Cloud', 'Stone', 'Grace', 'Hat', 'Hill', 'Hand', 'Home', 'Honey', 'Iron', 'Island', 'Jump',
+    'King', 'Kite', 'Lion', 'Lake', 'Light', 'Moon', 'Music', 'Night', 'North', 'Name', 'Ocean',
+    'Owl', 'Pony', 'Peace', 'Uncle', 'Year', 'Yellow', 'James', 'Mary', 'London', 'Monday'] },
+
+  // ── Real words (mixed from the full bank). Needs capitals (Darcy, Scrooge) and
+  //    the period (Mr., Mrs.), so it follows the capitals level. The only level
+  //    that reads wordLevel. ──
+  {keys:K_BOTTOM.concat(['.']), label:'Real words', wordLevel:true},
+
   // ── Punctuation group (all letters known; teach a few marks at a time) ──
   {keys:K_PUNCT_1, label:'Comma and period', phrases:[
     'ask, add, all.', 'far, near, here.', 'this, that, the other.', 'one, two, three.',
@@ -511,9 +525,6 @@ const LEVELS = [
     'and/or', 'either/or', 'he/she', 'yes/no', 'in/out', 'up/down', 'on/off', 'true/false',
     'left/right', 'win or lose; never quit.', 'now; not later.', 'one thing: focus.',
     'remember: be kind.', 'this; then that.', 'read; then write.', 'stop; look; listen.'] },
-
-  // ── Real words (mixed, from the full bank) — the only level that reads wordLevel ──
-  {keys:K_PUNCT, label:'Real words', wordLevel:true},
 
   // ── Real sentences (shortest → longest) ──
   {keys:K_PUNCT, label:'Short real sentences', sentenceLevel:true},
@@ -555,9 +566,10 @@ const LEVEL_GROUPS = [
   {label: 'Home row',       start: 0,  end: 5},
   {label: 'Top row',        start: 6,  end: 12},
   {label: 'Bottom row',     start: 13, end: 17},
-  {label: 'Punctuation',    start: 18, end: 23},
-  {label: 'Real words',     start: 24, end: 24},
-  {label: 'Real sentences', start: 25, end: 27},
+  {label: 'Capitals',       start: 18, end: 18},
+  {label: 'Real words',     start: 19, end: 19},
+  {label: 'Punctuation',    start: 20, end: 25},
+  {label: 'Real sentences', start: 26, end: 28},
 ];
 
 // Large word bank filtered by available keys at use time. Order is not

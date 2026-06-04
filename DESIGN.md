@@ -66,15 +66,18 @@ matches how touch typing is taught. The physical rows are grouped:
    a *top + home* word level. (Many words use only `q w e r t y u i o p`.)
 3. **Bottom row** — V N, C M, B, X Z. Bottom-row-only words are impossible, so
    the review level uses *home + bottom* letters. Bottom row is taught last.
-4. **Punctuation** — once all letters are known, the common marks are taught a
-   few at a time, each level via a curated `phrases` list (see Data model):
-   comma/period, apostrophe (`can't`, `men's`), question/exclamation, quotation
-   marks (dialogue), hyphen (hyphenated compounds), then colon/semicolon/slash.
-   Cumulative `K_PUNCT_1..4` key sets unlock the new marks progressively;
-   shifted marks (`" ? ! :`) ride on a base key (`' / 1 ;`) and are coached with
-   the opposite-hand Shift, just like capitals.
-5. **Real words** — mixed vocabulary from the full bank.
-6. **Real sentences** — three levels, drawing progressively longer sentences;
+4. **Capitals** — a dedicated Shift lesson (curated `phrases` of capitalized
+   words), so the opposite-hand Shift rule is taught before capitals are needed.
+5. **Real words** — mixed vocabulary from the full bank. Placed after Capitals
+   because proper nouns (`Darcy`, `Scrooge`) need Shift and `Mr.`/`Mrs.` need the
+   period; its key set is letters + `.` only.
+6. **Punctuation** — the common marks taught a few at a time, each level via a
+   curated `phrases` list (see Data model): comma/period, apostrophe (`can't`,
+   `men's`), question/exclamation, quotation marks (dialogue), hyphen, then
+   colon/semicolon/slash. Cumulative `K_PUNCT_1..4` key sets unlock the marks
+   progressively; shifted marks (`" ? ! :`) ride on a base key (`' / 1 ;`) and
+   are coached with the opposite-hand Shift, just like capitals.
+7. **Real sentences** — three levels, drawing progressively longer sentences;
    WPM appears on the 2nd and counts toward the score on the 3rd.
 
 Word-review lists were verified by script so that (a) every word is typeable
