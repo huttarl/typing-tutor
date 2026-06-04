@@ -83,6 +83,11 @@ and add some sentences from literature that include these punctuation.
       only one or zero letters from the bottom row. Instead, the words in this level should not include letters from the top row
       at all, and should include at least two letters from the bottom row.
 - [ ] Put the "real words" level before the punctuation level.
+- [ ] Save vertical space by:
+      - shortening the hand diagrams; only the fingers really matter.
+      - Getting rid of the bottom box:
+            - Put the "*** Excellent!" message, along with "Enter or click Next -->" into the instruction box (where it says "Use your left pinky to ...")
+            - Put the Next button next to the "Level" box
 
 ## Uncategorized / early history
 
