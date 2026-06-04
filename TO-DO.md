@@ -78,7 +78,11 @@ exercise with 3 stars.
 - [ ] When a prompt wraps at a space, and it's time to type that space, the usual cursor that shows what to type next is not visible.
 - [ ] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
 and add some sentences from literature that include these punctuation.
-- [ ] Add a favicon.
+- [x] Add a favicon.
+- [ ] The "Bottom + home row words" level includes some words with letters from the top row, and some words with
+      only one or zero letters from the bottom row. Instead, the words in this level should not include letters from the top row
+      at all, and should include at least two letters from the bottom row.
+- [ ] Put the "real words" level before the punctuation level.
 
 ## Uncategorized / early history
 

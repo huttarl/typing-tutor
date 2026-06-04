@@ -441,13 +441,21 @@ function shiftPair(ch) {
 const K_HOME    = ['f','j','d','k','s','l','a',';','g','h'];                  // full home row (incl. g,h stretch)
 const K_TOP     = K_HOME.concat(['e','i','r','u','t','y','w','o','q','p']);   // + full top row
 const K_BOTTOM  = K_TOP.concat(['c','m','v','n','b','x','z']);               // + full bottom row letters
-const K_PUNCT   = K_BOTTOM.concat([',','.',';',"'",'/','-']);                // + sentence punctuation (incl. shifted : " ? via these keys)
+// Punctuation is taught after all letters, a few marks per level (cumulative).
+// Shifted marks ride on a base key: " on the ' key, ? on /, ! on 1, : on ; (; is
+// already a home-row key, so the colon needs no new key).
+const K_PUNCT_1 = K_BOTTOM.concat([',', '.']);   // period & comma
+const K_PUNCT_2 = K_PUNCT_1.concat(["'"]);       // + apostrophe (also the base for ")
+const K_PUNCT_3 = K_PUNCT_2.concat(['/', '1']);  // + question and exclamation (Shift of / and 1)
+const K_PUNCT_4 = K_PUNCT_3.concat(['-']);       // + hyphen
+const K_PUNCT   = K_PUNCT_4;                      // full set, used by real words & sentences
 
 // Levels: key-learning levels add 1-2 keys; each group ends with real-word
 // review level(s) using a curated list limited to the letters learned so far.
 // What each level generates is chosen in generatePrompt by these flags, in order:
-//   sentenceLevel → a full sentence;  wordKey → that GROUP_WORDS list;
-//   wordLevel → the mixed WORD_BANK;  otherwise → a random letter drill.
+//   sentenceLevel → a full sentence;  phrases → that level's curated drill list;
+//   wordKey → that GROUP_WORDS list;  wordLevel → the mixed WORD_BANK;
+//   otherwise → a random letter drill.
 // So a level needs at most one of these; plain drills carry none.
 const LEVELS = [
   // ── Home row group (a s d f g h j k l ;) ──
@@ -473,6 +481,35 @@ const LEVELS = [
   {keys:K_TOP.concat(['v','n','c','m','b']),     label:'Add B — left index stretch'},
   {keys:K_TOP.concat(['v','n','c','m','b','x','z']), label:'Add X and Z — ring and pinky (all letters!)'},
   {keys:K_BOTTOM, label:'Bottom + home row words', wordKey:'bottomHome'},
+
+  // ── Punctuation group (all letters known; teach a few marks at a time) ──
+  {keys:K_PUNCT_1, label:'Comma and period', phrases:[
+    'ask, add, all.', 'far, near, here.', 'this, that, the other.', 'one, two, three.',
+    'come, go, stay.', 'up, down, all around.', 'win, lose, or draw.', 'now, soon, later.',
+    'in, out, and about.', 'red, green, blue.', 'left, right, center.', 'yes, no, maybe.',
+    'me, you, and them.', 'slow, then fast.', 'first, next, last.', 'here, there, everywhere.'] },
+  {keys:K_PUNCT_2, label:"Apostrophe — can't, it's, men's", phrases:[
+    "can't", "don't", "won't", "isn't", "didn't", "wasn't", "couldn't", "wouldn't", "shouldn't",
+    "it's", "I'm", "I've", "we'll", "we've", "you're", "you'll", "they're", "they'll",
+    "he'd", "she'd", "it'd", "that's", "there's", "what's", "who's", "let's",
+    "men's", "dog's", "child's", "James's", "world's", "today's", "o'clock"] },
+  {keys:K_PUNCT_3, label:'Question and exclamation marks', phrases:[
+    'Why?', 'Who?', 'How?', 'When?', 'Where?', 'What now?', 'Why not?', 'Is it?', 'Are you sure?',
+    'Really?', 'Who knows?', 'What for?', 'Stop!', 'Help!', 'Run!', 'Look out!', 'Oh no!',
+    'Well done!', 'How nice!', 'Watch out!', 'No way!', 'Hurry up!', 'Not again!', 'At last!'] },
+  {keys:K_PUNCT_3, label:'Quotation marks — speech and titles', phrases:[
+    '"Hi."', '"Go."', '"Stop!"', '"Help!"', '"Wait," I said.', '"Yes," he said.', '"No," she said.',
+    'She said, "Run."', 'He asked, "Why?"', '"Come here," he said.', '"Why not?" she asked.',
+    '"Let\'s go," they said.', '"I\'m here," I said.', '"Look out!" he cried.', '"Who is it?" I asked.'] },
+  {keys:K_PUNCT_4, label:'Hyphen — joining words', phrases:[
+    'well-known', 'up-to-date', 'mother-in-law', 'brother-in-law', 'sister-in-law', 'twenty-one',
+    'self-control', 'old-fashioned', 'good-bye', 'ice-cream', 'half-hour', 'full-time', 'part-time',
+    'long-term', 'well-being', 'one-third', 'two-thirds', 'double-check', 'follow-up', 'self-esteem',
+    'check-in', 'high-five', 'far-off', 'next-door', 'first-rate'] },
+  {keys:K_PUNCT_4, label:'Colon, semicolon, and slash', phrases:[
+    'and/or', 'either/or', 'he/she', 'yes/no', 'in/out', 'up/down', 'on/off', 'true/false',
+    'left/right', 'win or lose; never quit.', 'now; not later.', 'one thing: focus.',
+    'remember: be kind.', 'this; then that.', 'read; then write.', 'stop; look; listen.'] },
 
   // ── Real words (mixed, from the full bank) — the only level that reads wordLevel ──
   {keys:K_PUNCT, label:'Real words', wordLevel:true},
@@ -517,8 +554,9 @@ const LEVEL_GROUPS = [
   {label: 'Home row',       start: 0,  end: 5},
   {label: 'Top row',        start: 6,  end: 12},
   {label: 'Bottom row',     start: 13, end: 17},
-  {label: 'Real words',     start: 18, end: 18},
-  {label: 'Real sentences', start: 19, end: 21},
+  {label: 'Punctuation',    start: 18, end: 23},
+  {label: 'Real words',     start: 24, end: 24},
+  {label: 'Real sentences', start: 25, end: 27},
 ];
 
 // Large word bank filtered by available keys at use time. Order is not
@@ -906,6 +944,21 @@ function generatePrompt(level, levelIdx) {
     const chosen = slice[Math.floor(Math.random() * slice.length)];
     currentSource = chosen.source || '';
     return chosen.text;
+  }
+
+  // ── Punctuation-teaching levels: build a line from the level's curated list ──
+  if (level.phrases) {
+    const list = level.phrases;
+    const cap = promptLineCapacity();
+    const target = Math.min(20 + Math.floor(Math.random()*16), cap);
+    let parts = [], len = 0, attempts = 0;
+    while (len < target && attempts < 200) {
+      attempts++;
+      const w = list[Math.floor(Math.random()*list.length)];
+      // no immediate repeats; keep the whole line on one row
+      if (!parts.includes(w) && len + w.length + 1 <= cap + 1) { parts.push(w); len += w.length + 1; }
+    }
+    return parts.length ? parts.join(' ') : list[0];
   }
 
   // ── Group word-review levels: use the pre-generated list for this group ──
