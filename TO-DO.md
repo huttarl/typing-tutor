@@ -103,7 +103,7 @@ and add some sentences from literature that include these punctuation.
 - [ ] Make the "level - n stars" display on the start screen for each character clearer. Two of
       us users thought "14⋅23⭐" was saying "14/23", that is, the character is on level 14 of 23.
       The star could be more contrasty with the background; the number of stars could be more separated from the level number, e.g. "14 (23⭐)"; or we could even remove the number of stars.
-- [ ] visible streak indicator: the student isn't told "2 of 3 in a row." With a streak that resets on a miss, that opacity matters more. A small "🔵🔵⚪" on the result screen would make progress legible
+- [x] visible streak indicator: the student isn't told "2 of 3 in a row." With a streak that resets on a miss, that opacity matters more. A small "🔵🔵⚪" on the result screen would make progress legible
 
 ## Uncategorized / early history
 

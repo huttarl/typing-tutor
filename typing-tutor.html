@@ -263,6 +263,10 @@ body {
 .stat-label { font-size: .7rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
 .stat-card.hidden-stat { display: none; }
+#level-card { cursor: help; }   /* hover for the streak tooltip */
+.streak-dots { display: flex; gap: 4px; justify-content: center; margin-top: 5px; min-height: 9px; }
+.streak-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--accent); box-sizing: border-box; }
+.streak-dot.on { background: var(--accent); }
 
 /* keyboard */
 .kb-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: .5rem; max-width: 100%; overflow-x: auto; }
@@ -383,7 +387,7 @@ body {
       <svg id="hand-right" width="100" height="118" viewBox="0 38 110 130" style="transform:scaleX(-1)"></svg>
     </div>
     <div class="stats-side">
-      <div class="stat-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div></div>
+      <div class="stat-card" id="level-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div><div class="streak-dots" id="streak-dots"></div></div>
     </div>
   </div>
 </div>
@@ -905,6 +909,7 @@ function showExercise() {
   document.getElementById('level-purpose').textContent = '🎯 ' + level.label;
   document.getElementById('prog-fill').style.width = Math.round((levelIdx / LEVELS.length)*100) + '%';
   document.getElementById('stat-level').textContent = levelIdx+1;
+  renderStreak(levelIdx, passStreak);   // dots reflect the current level's streak
   document.getElementById('stat-acc').textContent = '—';
   document.getElementById('stat-wpm').textContent = '—';
 
@@ -1329,6 +1334,18 @@ function masteryGoal(levelIdx) {
   return { streak: 3, accuracy: 90 };
 }
 
+// Always-on streak indicator under the Level number: `streak` filled dots out of
+// the level's required count. A hover tooltip on the Level card explains it.
+function renderStreak(levelIdx, streak) {
+  const goal = masteryGoal(levelIdx);
+  const filled = Math.min(streak, goal.streak);
+  let html = '';
+  for (let i = 0; i < goal.streak; i++) html += `<span class="streak-dot${i < filled ? ' on' : ''}"></span>`;
+  document.getElementById('streak-dots').innerHTML = html;
+  document.getElementById('level-card').title =
+    `Type ${goal.streak} exercises in a row accurately to advance to the next level.`;
+}
+
 function completeExercise(typed) {
   exerciseActive = false;
   document.getElementById('typing-input').disabled = true;
@@ -1343,7 +1360,7 @@ function completeExercise(typed) {
   if (levelIdx < WPM_STARS_FROM) {
     stars = acc >= 98 ? 3 : acc >= 90 ? 2 : acc >= 75 ? 1 : 0;
   } else {
-    stars = (acc>=98&&wpm>=35) ? 3 : (acc>=90&&wpm>=25) ? 2 : acc>=75 ? 1 : 0;
+    stars = (acc >= 98 && wpm >= 35) ? 3 : (acc >= 90 && wpm >= 25) ? 2 : acc >= 75 ? 1 : 0;
   }
   totalStars += stars;
 
@@ -1352,6 +1369,7 @@ function completeExercise(typed) {
   const goal = masteryGoal(levelIdx);
   const passed = stars >= 2 && acc >= goal.accuracy;
   passStreak = passed ? passStreak + 1 : 0;
+  const streakForDisplay = passStreak;   // before any level-up reset below
 
   let levelUp = false;
   if (passStreak >= goal.streak) {
@@ -1364,6 +1382,8 @@ function completeExercise(typed) {
     }
   }
   saveProgress();
+  // Update the streak dots for the level just played (all filled on a level-up).
+  renderStreak(levelIdx, streakForDisplay);
 
   const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
   const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
