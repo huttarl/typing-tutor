@@ -102,16 +102,23 @@ newly introduced keys.
   deliberate: the goal is correct typing without looking back, so reflexive
   backspacing should not hide mistakes. (State: `keystrokes`, `keyErrors`,
   `prevTypedLen`.)
-- **Level-up.** Completing 3 exercises at ≥2 stars marks the level complete and
-  advances. (See To-do: early home-row levels should likely require more reps.)
+- **Level-up is mastery-based** (`masteryGoal`, `passStreak`). A level is
+  completed after a *streak* of consecutive exercises that clear its bar (≥2 stars
+  **and** ≥ a per-group accuracy); a miss resets the streak. Foundational rows set
+  a higher accuracy bar (Home row 95%, Top/Bottom 92%, rest 90%; streak 3
+  throughout), so the basics naturally take more attempts to clear — overlearning,
+  and self-adjusting to each student rather than a flat exercise count. Thresholds
+  are tunable in one place (`masteryGoal`).
 
 ## Progress & persistence
 
 - `localStorage` key `tt2_<characterId>` stores `{ level, completed[], stars,
-  exercises, birthYear }`. `completed` is an array of independently-tracked
+  streak, birthYear }`. `completed` is an array of independently-tracked
   completed level indices (migrated from an older `maxLevel`-only format on
-  load). `birthYear` is captured once (see Break timer) and preserved by every
-  save.
+  load). `streak` is the mastery `passStreak` toward the current level-up (older
+  saves used `exercises`; that field is ignored, so the in-level streak just
+  restarts at 0). `birthYear` is captured once (see Break timer) and preserved by
+  every save.
 - `localStorage` key `tt2_settings` stores global settings: `lockLevels` and
   `breakReminders` (both default true).
 - **Level locking** (`isLevelUnlocked`): when on (default), a level is

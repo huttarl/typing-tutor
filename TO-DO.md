@@ -6,9 +6,14 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
 
 ## Pedagogy / content
 
-- [ ] **More reps on foundational levels.** Research says home-row levels need
-      more repetition than later ones. Make early levels require more completed
-      exercises before advancing (currently a flat 3 across all levels).
+- [x] **More reps on foundational levels.** Replaced the flat "3 exercises"
+      gate with mastery-based progression (`masteryGoal`/`passStreak`): advance
+      only after 3 consecutive exercises clear a per-group accuracy bar (Home row
+      95%, Top/Bottom 92%, rest 90%); a miss resets the streak. The higher bar on
+      foundational rows means they take more attempts, self-adjusting per student.
+      NOTE: the "research says" claim was overstated — this rests on
+      mastery-learning/overlearning principles, not a specific cited study; verify
+      sources before leaning on the claim in docs.
 - [x] **Optional per-session break timer.** Suggests a break at an
       age-appropriate mark (~5 min under age 8, ~10 min ages 8–11, ~15 min age
       12+). Age captured once per character (stored as birth year); toggleable
@@ -69,7 +74,8 @@ and author. (Not sure if the student should be asked to type these.)
 - [ ] We'll probably have to check our quotes. I found at least one misquote. Consider wikiquotes to be authoritative.
 - [ ] Maybe add a "Redo" button at the bottom next to "Next" that allows the user to redo the exercise they just did, if desired.
 - [ ] Maybe add a confetti/star "explosion" over the page when the student completes an
-exercise with 3 stars.
+exercise with 3 stars. Or a small "celebration" for each 3-star exercise complete, and a bigger celebration for completing a level. Both with appropriate sound effect.
+      - enforce a pause after completing a level, before displaying the next one. This makes sure the student is aware of having completed something! That pause could be enforced simply by means of the "celebration."
 - [ ] Level 4 says "Add A and ;", but the first two exercises have only one 'a' and no ';'
       Not sure if this is a more general problem, but if you're adding certain keys,
       the new keys should (both/all) be used frequently in the exercise.
@@ -91,6 +97,10 @@ and add some sentences from literature that include these punctuation.
       - Getting rid of the bottom box:
             - Put the "*** Excellent!" message, along with "Enter or click Next -->" into the instruction box (where it says "Use your left pinky to ...")
             - Put the Next button next to the "Level" box
+- [ ] Make the sound for wrong key less startling.
+- [ ] Make the "level - n stars" display on the start screen for each character clearer. Two of
+      us users thought "14⋅23⭐" was saying "14/23", that is, the character is on level 14 of 23.
+      The star could be more contrasty with the background; the number of stars could be more separated from the level number, e.g. "14 (23⭐)"; or we could even remove the number of stars.
 
 ## Uncategorized / early history
 

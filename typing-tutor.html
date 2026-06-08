@@ -681,7 +681,7 @@ const SENTENCES = [
 let currentChar = null;
 let levelIndex = 0;
 let completedLevels = new Set();   // indices this character has completed
-let exercisesDoneThisLevel = 0;
+let passStreak = 0;                // consecutive passing exercises in the current level
 let totalStars = 0;
 let currentPrompt = '';
 let currentSource = '';   // attribution for the current sentence ('' if none)
@@ -741,11 +741,11 @@ function loadState(id) {
       level: parsed.level || 0,
       completed: completed,
       stars: parsed.stars || 0,
-      exercises: parsed.exercises || 0,
+      streak: parsed.streak || 0,            // consecutive passes toward leveling up
       birthYear: parsed.birthYear || null   // for the age-based break timer
     };
   }
-  catch(e) { return {level:0,completed:[],stars:0,exercises:0,birthYear:null}; }
+  catch(e) { return {level:0,completed:[],stars:0,streak:0,birthYear:null}; }
 }
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
@@ -757,7 +757,7 @@ function saveProgress() {
     level: levelIndex,
     completed: Array.from(completedLevels),
     stars: totalStars,
-    exercises: exercisesDoneThisLevel,
+    streak: passStreak,
     birthYear: currentBirthYear,
   });
 }
@@ -789,7 +789,7 @@ function isLevelUnlocked(i) {
 // ── AVATAR GRID ───────────────────────────────────────────────────────────────
 function characterHasProgress(s) {
   return (s.completed && s.completed.length > 0) || s.stars > 0 ||
-         s.level > 0 || (s.exercises || 0) > 0;
+         s.level > 0 || (s.streak || 0) > 0;
 }
 
 function renderAvatarGrid() {
@@ -849,7 +849,7 @@ function enterLesson(s) {
   levelIndex = s.level;
   completedLevels = new Set(s.completed);
   totalStars = s.stars;
-  exercisesDoneThisLevel = s.exercises || 0;
+  passStreak = s.streak || 0;
   currentBirthYear = s.birthYear;
   beginSessionTimer();
   document.getElementById('pick-screen').classList.remove('active');
@@ -1314,6 +1314,16 @@ function updateLiveStats(typed) {
   }
 }
 
+// Mastery bar for advancing past a level: a streak of consecutive exercises at
+// or above the given accuracy. Foundational rows set a higher accuracy bar, so
+// they take more attempts to clear — overlearning the basics. Tune here.
+function masteryGoal(levelIdx) {
+  const group = groupOf(levelIdx);
+  if (group === 'Home row') return { streak: 3, accuracy: 95 };
+  if (group === 'Top row' || group === 'Bottom row') return { streak: 3, accuracy: 92 };
+  return { streak: 3, accuracy: 90 };
+}
+
 function completeExercise(typed) {
   exerciseActive = false;
   document.getElementById('typing-input').disabled = true;
@@ -1331,16 +1341,20 @@ function completeExercise(typed) {
     stars = (acc>=98&&wpm>=35) ? 3 : (acc>=90&&wpm>=25) ? 2 : acc>=75 ? 1 : 0;
   }
   totalStars += stars;
-  exercisesDoneThisLevel++;
 
-  // level up after 3 exercises with avg >=2 stars; mark this level completed
+  // Mastery-based progression: advance only after a streak of exercises that
+  // clear the level's bar; a miss resets the streak. (See masteryGoal.)
+  const goal = masteryGoal(levelIdx);
+  const passed = stars >= 2 && acc >= goal.accuracy;
+  passStreak = passed ? passStreak + 1 : 0;
+
   let levelUp = false;
-  if (stars >= 2 && exercisesDoneThisLevel >= 3) {
+  if (passStreak >= goal.streak) {
     completedLevels.add(levelIdx);
     // Advance unless we're already on the last level (nowhere left to go).
     if (levelIdx < LEVELS.length-1) {
       levelIndex++;
-      exercisesDoneThisLevel = 0;
+      passStreak = 0;
       levelUp = true;
     }
   }
@@ -1549,7 +1563,7 @@ function closeLevelPicker() {
 function jumpToLevel(i) {
   if (!isLevelUnlocked(i)) return;
   levelIndex = i;
-  exercisesDoneThisLevel = 0;
+  passStreak = 0; // fresh mastery streak for the new level
   saveProgress(); // persist the new current level (completion set unchanged)
   closeLevelPicker();
   showExercise();
