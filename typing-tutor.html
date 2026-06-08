@@ -234,7 +234,7 @@ body {
   line-height: 1.7;
   min-height: 70px;
   overflow-wrap: break-word; /* wrap at spaces; only break inside a word if it alone exceeds the line */
-  margin-bottom: 1rem;
+  margin-bottom: .35rem;
 }
 .ch { color: var(--text3); }
 .ch.correct { color: var(--green); }
@@ -243,7 +243,7 @@ body {
 /* Source attribution shown under the prompt on sentence levels (not typed). */
 .source-cite {
   font-size: .8rem; color: var(--text2); font-style: italic;
-  text-align: right; margin: -.6rem 0 .85rem; min-height: 1em;
+  text-align: right; margin: 0 0 .35rem; min-height: 0;
 }
 
 /* hidden input */
@@ -251,17 +251,18 @@ body {
   position: absolute; left: -9999px; opacity: 0;
 }
 
-/* stats */
-.stats-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+/* hands + stats on one row: Accuracy/WPM at left, hands centered, Level/Next at right */
+.lesson-bottom { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; margin: .25rem 0; }
+.hands-row { display: flex; gap: 1.25rem; justify-content: center; }
+.stats-side { display: flex; gap: 10px; align-items: stretch; justify-self: center; }
 .stat-card {
-  flex: 1; background: var(--surface2); border-radius: var(--radius-sm);
-  padding: .6rem .75rem; text-align: center;
+  background: var(--surface2); border-radius: var(--radius-sm);
+  padding: .5rem .9rem; text-align: center; min-width: 84px;
+  display: flex; flex-direction: column; justify-content: center;
 }
 .stat-label { font-size: .7rem; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
 .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text); }
-.stat-card.hidden-stat { opacity: 0; pointer-events: none; }
-
-.hands-row { display: flex; gap: 2rem; justify-content: center; }
+.stat-card.hidden-stat { display: none; }
 
 /* keyboard */
 .kb-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: .5rem; max-width: 100%; overflow-x: auto; }
@@ -293,18 +294,15 @@ body {
 .key[data-finger="4"] { --fcolor: var(--thumb); }
 .key.home-row { border-color: var(--fcolor, var(--border)); }
 
-/* result */
-.result-box {
-  display: flex; align-items: center; gap: .75rem;
-  background: var(--surface); border: 2px solid var(--border);
-  border-radius: var(--radius); padding: .6rem 1rem;
-  margin-top: .5rem; flex-wrap: wrap;
+/* result shown inside the instruction (finger-reminder) box on completion */
+.finger-reminder.result {
+  gap: .5rem; flex-wrap: wrap;
+  background: var(--surface2); border-left: 4px solid var(--border);
 }
-.result-stars { font-size: 1.3rem; letter-spacing: 2px; flex-shrink: 0; }
-.result-label { font-size: .95rem; font-weight: 700; }
-.result-sub { font-size: .82rem; color: var(--text2); }
-.result-text { display: flex; flex-direction: column; flex: 1; min-width: 120px; }
-.btn-row { display: flex; gap: 8px; flex-shrink: 0; }
+.finger-reminder.result.pass { background: var(--green-light); border-left-color: var(--green); color: #15803d; }
+.finger-reminder.result .result-stars { font-size: 1.2rem; letter-spacing: 2px; }
+.finger-reminder.result .result-hint { color: var(--text2); font-weight: 600; }
+.result-next { padding: .35rem 1rem; font-size: .85rem; margin-left: auto; }  /* push to the right edge of the box */
 .btn {
   padding: .6rem 1.4rem; border-radius: var(--radius-sm);
   border: 1.5px solid var(--border); background: var(--surface);
@@ -367,23 +365,27 @@ body {
   </div>
   <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
   <div class="level-purpose" id="level-purpose"></div>
+  <div id="break-note"></div>
   <div class="position-hint" id="position-hint"></div>
-  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span></div>
+  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span><button class="btn primary result-next" id="result-next-btn" style="display:none" onclick="nextExercise()">Next →</button></div>
   <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
   <div class="source-cite" id="source-cite"></div>
   <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
   <div class="kb-wrap" id="keyboard"></div>
   <div class="kb-legend" id="kb-legend"></div>
-  <div class="hands-row" style="margin: .5rem 0 .25rem;">
-    <svg id="hand-left" width="105" height="120" viewBox="0 38 110 130"></svg>
-    <svg id="hand-right" width="105" height="120" viewBox="0 38 110 130" style="transform:scaleX(-1)"></svg>
+  <div class="lesson-bottom">
+    <div class="stats-side">
+      <div class="stat-card" id="stat-acc-card"><div class="stat-label">Accuracy</div><div class="stat-val" id="stat-acc">—</div></div>
+      <div class="stat-card hidden-stat" id="stat-wpm-card"><div class="stat-label">WPM</div><div class="stat-val" id="stat-wpm">—</div></div>
+    </div>
+    <div class="hands-row">
+      <svg id="hand-left" width="100" height="118" viewBox="0 38 110 130"></svg>
+      <svg id="hand-right" width="100" height="118" viewBox="0 38 110 130" style="transform:scaleX(-1)"></svg>
+    </div>
+    <div class="stats-side">
+      <div class="stat-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div></div>
+    </div>
   </div>
-  <div class="stats-row">
-    <div class="stat-card" id="stat-acc-card"><div class="stat-label">Accuracy</div><div class="stat-val" id="stat-acc">—</div></div>
-    <div class="stat-card hidden-stat" id="stat-wpm-card"><div class="stat-label">WPM</div><div class="stat-val" id="stat-wpm">—</div></div>
-    <div class="stat-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div></div>
-  </div>
-  <div id="result-area"></div>
 </div>
 
 <div id="modal-mount"></div>
@@ -927,10 +929,10 @@ function showExercise() {
 
   const firstChar = currentPrompt[0] || '';
   renderPrompt('');
-  renderFingerReminder(firstChar, level, levelIdx);
+  renderFingerReminder(firstChar, level, levelIdx);  // also clears the result styling
   renderKeyboard(level, firstChar);
   updateHands(firstChar);
-  document.getElementById('result-area').innerHTML = '';
+  document.getElementById('break-note').innerHTML = '';   // result + Next live in the instruction box, cleared by renderFingerReminder above
 }
 
 // How many monospace characters fit on ONE line of the prompt box right now.
@@ -1085,6 +1087,9 @@ function renderFingerReminder(nextChar, level, levelIdx) {
   const raw = nextChar || '';
   const pair = shiftPair(raw);              // { base, shift } or null
   const info = pair ? KEY_INFO[pair.base] : null;
+
+  dot.style.display = '';                   // restore the dot if a result had hidden it
+  document.getElementById('result-next-btn').style.display = 'none';  // hide the result's Next button
 
   // Larger, more prominent coaching on the early home-row levels; smaller later.
   const inHomeGroup = groupOf(levelIdx) === 'Home row';
@@ -1362,30 +1367,26 @@ function completeExercise(typed) {
 
   const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
   const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
-  const wpmNote = levelIdx >= WPM_SHOW_FROM ? ` · ${wpm} WPM` : '';
   const levelNote = levelUp ? ' 🎉 Level up!' : '';
+
+  // Show the result in the instruction box (no separate result box), with the
+  // Next button right after the "Enter or click Next →" hint.
+  const el = document.getElementById('finger-reminder');
+  el.className = 'finger-reminder result' + (passed ? ' pass' : '');
+  el.style.background = ''; el.style.borderLeft = '';   // clear per-key inline styles so the result class shows
+  document.getElementById('reminder-dot').style.display = 'none';
+  document.getElementById('reminder-text').innerHTML =
+    `<span class="result-stars">${starStr}</span> <strong>${msgs[stars]}${levelNote}</strong>`
+    + ` &nbsp;·&nbsp; <span class="result-hint">Enter or click Next →</span>`;
+  document.getElementById('result-next-btn').style.display = '';   // shown at the box's right edge
 
   // At this natural stopping point, gently suggest a break if it's time.
   const breakNow = maybeSuggestBreak();
-  const breakHtml = breakNow ? `
+  document.getElementById('break-note').innerHTML = breakNow ? `
     <div class="break-note">
       🌿 You've been typing for about ${breakMinutesForAge(currentAge())} minutes.
       It's a good time to rest your hands and eyes for a moment. Come back whenever you're ready!
     </div>` : '';
-
-  document.getElementById('result-area').innerHTML = `
-    ${breakHtml}
-    <div class="result-box">
-      <div class="result-stars">${starStr}</div>
-      <div class="result-text">
-        <div class="result-label">${msgs[stars]}${levelNote}</div>
-        <div class="result-sub"><!-- ${acc}% accuracy${wpmNote} &nbsp;·&nbsp; -->Enter or click Next →</div>
-      </div>
-      <div class="btn-row">
-        <button class="btn primary" id="next-btn" onclick="nextExercise()">Next →</button>
-        <!-- <button class="btn" onclick="goBack()">← Back</button> -->
-      </div>
-    </div>`;
 }
 
 // ── AGE MODAL (first time on a character) ───────────────────────────────────────
