@@ -72,7 +72,8 @@ and author. (Not sure if the student should be asked to type these.)
 - [ ] When presenting whole sentences and passages, make sure not to repeat the same passage
       twice in a row.
 - [ ] We'll probably have to check our quotes. I found at least one misquote. Consider wikiquotes to be authoritative.
-- [ ] Maybe add a "Redo" button at the bottom next to "Next" that allows the user to redo the exercise they just did, if desired.
+- [x] Maybe add a "Redo" button at the bottom next to "Next" that allows the user to redo the exercise they just did, if desired.
+      Re-runs the same prompt (and citation); counts as a normal attempt (affects the streak like any exercise). Hidden after a level-up.
 - [ ] Maybe add a confetti/star "explosion" over the page when the student completes an
 exercise with 3 stars. Or a small "celebration" for each 3-star exercise complete, and a bigger celebration for completing a level. Both with appropriate sound effect.
       - enforce a pause after completing a level, before displaying the next one. This makes sure the student is aware of having completed something! That pause could be enforced simply by means of the "celebration."

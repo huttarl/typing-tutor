@@ -306,7 +306,8 @@ body {
 .finger-reminder.result.pass { background: var(--green-light); border-left-color: var(--green); color: #15803d; }
 .finger-reminder.result .result-stars { font-size: 1.2rem; letter-spacing: 2px; }
 .finger-reminder.result .result-hint { color: var(--text2); font-weight: 600; }
-.result-next { padding: .35rem 1rem; font-size: .85rem; margin-left: auto; }  /* push to the right edge of the box */
+.result-actions { margin-left: auto; display: inline-flex; gap: .5rem; align-items: center; }  /* Redo + Next, hugging the box's right edge */
+.result-redo, .result-next { padding: .35rem 1rem; font-size: .85rem; }
 .btn {
   padding: .6rem 1.4rem; border-radius: var(--radius-sm);
   border: 1.5px solid var(--border); background: var(--surface);
@@ -371,7 +372,7 @@ body {
   <div class="level-purpose" id="level-purpose"></div>
   <div id="break-note"></div>
   <div class="position-hint" id="position-hint"></div>
-  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span><button class="btn primary result-next" id="result-next-btn" style="display:none" onclick="nextExercise()">Next →</button></div>
+  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span><span class="result-actions"><button class="btn result-redo" id="result-redo-btn" style="display:none" onclick="redoExercise()">↻ Redo</button><button class="btn primary result-next" id="result-next-btn" style="display:none" onclick="nextExercise()">Next →</button></span></div>
   <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
   <div class="source-cite" id="source-cite"></div>
   <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
@@ -899,7 +900,7 @@ function getLevel() { return LEVELS[clampedLevelIndex()]; }
 // Is any modal (level picker or age entry) currently mounted?
 function isModalOpen() { return document.getElementById('modal-mount').children.length > 0; }
 
-function showExercise() {
+function showExercise(keepPrompt) {   // keepPrompt: re-run the same prompt (Redo) instead of generating a new one
   const level = getLevel();
   const levelIdx = clampedLevelIndex();
   const animal = ANIMALS.find(a=>a.id===currentChar);
@@ -917,7 +918,7 @@ function showExercise() {
   const showWpm = levelIdx >= WPM_SHOW_FROM;
   document.getElementById('stat-wpm-card').classList.toggle('hidden-stat', !showWpm);
 
-  currentPrompt = generatePrompt(level, levelIdx);
+  if (!keepPrompt) currentPrompt = generatePrompt(level, levelIdx);  // Redo keeps the same prompt (and its citation)
   startTime = null;
   exerciseActive = true;
   keystrokes = 0;
@@ -1094,7 +1095,8 @@ function renderFingerReminder(nextChar, level, levelIdx) {
   const info = pair ? KEY_INFO[pair.base] : null;
 
   dot.style.display = '';                   // restore the dot if a result had hidden it
-  document.getElementById('result-next-btn').style.display = 'none';  // hide the result's Next button
+  document.getElementById('result-next-btn').style.display = 'none';  // hide the result's buttons
+  document.getElementById('result-redo-btn').style.display = 'none';
 
   // Larger, more prominent coaching on the early home-row levels; smaller later.
   const inHomeGroup = groupOf(levelIdx) === 'Home row';
@@ -1399,6 +1401,9 @@ function completeExercise(typed) {
     `<span class="result-stars">${starStr}</span> <strong>${msgs[stars]}${levelNote}</strong>`
     + ` &nbsp;·&nbsp; <span class="result-hint">Enter or click Next →</span>`;
   document.getElementById('result-next-btn').style.display = '';   // shown at the box's right edge
+  // Redo (re-run the same prompt) — offered except after a level-up, where the
+  // prompt belongs to the level we just left.
+  document.getElementById('result-redo-btn').style.display = levelUp ? 'none' : '';
 
   // At this natural stopping point, gently suggest a break if it's time.
   const breakNow = maybeSuggestBreak();
@@ -1457,6 +1462,9 @@ function closeAgeModal() {
 
 function nextExercise() {
   showExercise();
+}
+function redoExercise() {
+  showExercise(true);   // same prompt; counts as a normal attempt
 }
 
 // ── LEVEL PICKER ───────────────────────────────────────────────────────────────
