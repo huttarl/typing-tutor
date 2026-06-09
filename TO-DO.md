@@ -86,9 +86,12 @@ exercise with 3 stars. Or a small "celebration" for each 3-star exercise complet
 - [x] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
 and add some sentences from literature that include these punctuation.
 - [x] Add a favicon.
-- [ ] The "Bottom + home row words" level includes some words with letters from the top row, and some words with
+- [x] The "Bottom + home row words" level includes some words with letters from the top row, and some words with
       only one or zero letters from the bottom row. Instead, the words in this level should not include letters from the top row
       at all, and should include at least two letters from the bottom row.
+      Rebuilt the `bottomHome` list (33 words) — script-verified: no top-row letters, ≥2 bottom-row letters each.
+      (Broader principle "each exercise should drill the level's keys" also applies to the random-drill levels — see the
+      "Level 4 says 'Add A and ;'…" item, still open.)
 - [x] Put the "real words" (now "Mixed words") level before the punctuation level.
       It comes before the Capitals lesson too, so it's kept all-lowercase via the
       `allowCaps` filter and a no-punctuation key set; `Mr.`/`Mrs.` are practiced
@@ -101,7 +104,7 @@ and add some sentences from literature that include these punctuation.
             - Put the "*** Excellent!" message, along with "Enter or click Next -->" into the instruction box (where it says "Use your left pinky to ...")
             - Put the Next button next to the "Level" box
 - [ ] Make the sound for wrong key less startling.
-- [ ] Make the "level - n stars" display on the start screen for each character clearer. Two of
+- [x] Make the "level - n stars" display on the start screen for each character clearer. Two of
       us users thought "14⋅23⭐" was saying "14/23", that is, the character is on level 14 of 23.
       The star could be more contrasty with the background; the number of stars could be more separated from the level number, e.g. "14 (23⭐)"; or we could even remove the number of stars.
 - [x] visible streak indicator: the student isn't told "2 of 3 in a row." With a streak that resets on a miss, that opacity matters more. A small "🔵🔵⚪" on the result screen would make progress legible

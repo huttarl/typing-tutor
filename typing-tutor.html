@@ -560,10 +560,21 @@ const GROUP_WORDS = {
   topHome: ['the','there','their','three','tree','free','feet','dear','idea','great','heart','first','this','that',
             'sister','father','rather','either','tiger','street','those','these','through','thought','people','letter',
             'together','power','water','daughter','laughter','toward','grow','show','south','house','horse'],
-  // bottom row + home row (bottom-row-only words are impossible)
-  bottomHome: ['and','hand','land','band','sand','man','can','dance','glance','balance','add','dad','lad','sad','bad',
-               'mad','had','ban','van','flan','clan','scan','blank','black','bland','gland','calm','clam','flag',
-               'slack','snack','salad','almanac'],
+  // bottom row + home row. Every word has at least two bottom-row letters
+  // (z x c v b n m) so the drill really exercises the newly learned bottom row.
+  // The first group uses no top-row letters at all; the second group allows at
+  // most one top-row letter (usually a vowel) to widen the vocabulary.
+  bottomHome: ['man','can','ban','van','nab','cab',
+               'band','bland','blank','black','clan','scan','snack','sandbag',
+               'calm','clam','clams','calms',
+               'lamb','mamba','almanac','madam',
+               'banana','bandana','cabana','savanna','canvas',
+               'handbag','hangman','sandman','handball','backhand','flashback',
+               // up to one top-row letter (usually a vowel), still 2+ bottom-row letters:
+               'bench','bend','mend','camel','dance','glance','chance','advance','balance','cancel',
+               'candle','bangle','mangle','comb','climb','bomb','bacon','mango','cannon',
+               'cabin','basin','vanish','banish','album','numb',
+               'crab','brand','branch','scram','caravan','camp','champ','vacant'],
   // all letters
   all: ['now','how','who','two','word','work','world','power','quick','quiet','people','pretty','proper','queen','box',
         'wax','zip','zebra','prize','zone','wizard','expert','wonder','question','explain','example','enjoy','puzzle',
