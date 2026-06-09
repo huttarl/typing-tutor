@@ -468,7 +468,7 @@ const K_PUNCT   = K_PUNCT_4;                      // full set, used by real word
 const LEVELS = [
   // ── Home row group (a s d f g h j k l ;) ──
   {keys:['f','j'],                          label:'F and J — index fingers, home row'},
-  {keys:['f','j','d','k'],                  label:'Add D and K — middle fingers'},
+  {keys:['f','j','d','k'],                  label:'Add D and K — middle fingers, and space'},
   {keys:['f','j','d','k','s','l'],          label:'Add S and L — ring fingers'},
   {keys:['f','j','d','k','s','l','a',';'],  label:'Add A and ; — pinky fingers'},
   {keys:['f','j','d','k','s','l','a',';','g','h'], label:'Add G and H — index stretch (full home row!)'},
@@ -805,7 +805,7 @@ function renderAvatarGrid() {
     const s = loadState(a.id);
     const level = Math.min(s.level, LEVELS.length-1);
     const hasProgress = characterHasProgress(s);
-    const progressText = hasProgress ? `Level ${level+1} · ${s.stars}⭐` : 'New — not started';
+    const progressText = hasProgress ? `Level ${level+1}  (${s.stars}&starf;)` : 'New — not started';
     return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')" ondblclick="selectAndStart('${a.id}')">
       <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
       <div class="avatar-name">${a.name}</div>
@@ -1387,7 +1387,7 @@ function completeExercise(typed) {
   // Update the streak dots for the level just played (all filled on a level-up).
   renderStreak(levelIdx, streakForDisplay);
 
-  const starStr = ['◇◇◇','⭐','⭐⭐','⭐⭐⭐'][stars];
+  const starStr = ['&star;&star;&star;','&starf;&star;&star;','&starf;&starf;&star;','&starf;&starf;&starf;'][stars];
   const msgs = ['Slow down — aim for accuracy!','Good effort!','Well done!','Excellent!'];
   const levelNote = levelUp ? ' 🎉 Level up!' : '';
 
