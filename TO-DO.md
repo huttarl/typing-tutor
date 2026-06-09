@@ -69,6 +69,8 @@ and author. (Not sure if the student should be asked to type these.)
       a hosted copy, not the offline app the children use).
 - [x] Words from great books shouldn't be stripped of their capitalization.
       And words that require punctuation, like "Mrs.", shouldn't be stripped of it.
+- [ ] When learning / practicing individual characters, I don't think it makes sense to have more than 2 in a row of the same character. Because that almost never happens in English... or in coding.
+Except for ellipses...!
 - [ ] When presenting whole sentences and passages, make sure not to repeat the same passage
       twice in a row.
 - [ ] We'll probably have to check our quotes. I found at least one misquote. Consider wikiquotes to be authoritative.

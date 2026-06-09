@@ -282,7 +282,6 @@ body {
 }
 .key-mod { font-size: .62rem; color: var(--text3); background: var(--surface2); }
 .key.locked { background: var(--bg); color: var(--text3); border-color: var(--border); opacity: .45; }
-.key.home-row { border-color: #c4b8e8; }
 .key.current {
   border-width: 2.5px;
   transform: scale(1.08);
@@ -296,7 +295,14 @@ body {
 .key[data-finger="2"] { --fcolor: var(--finger2); }
 .key[data-finger="3"] { --fcolor: var(--finger3); }
 .key[data-finger="4"] { --fcolor: var(--thumb); }
-.key.home-row { border-color: var(--fcolor, var(--border)); }
+/* Every introduced (unlocked) key shows its finger color as the border, all the
+   time — not only the home row, and not only the next key to press. */
+.key[data-finger] { border-color: var(--fcolor, var(--border)); }
+/* Home-position bumps under F and J, mirroring the ridges on a real keyboard. */
+.key.bump::after {
+  content: ''; position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  width: 9px; height: 2px; border-radius: 1px; background: var(--text3);
+}
 
 /* result shown inside the instruction (finger-reminder) box on completion */
 .finger-reminder.result {
@@ -1234,7 +1240,6 @@ const GAP  = 4;    // px gap between keys
 
 function renderKeyboard(level, nextChar) {
   const unlockedSet = new Set(level.keys);
-  const homeRow = new Set(['a','s','d','f','g','h','j','k','l',';']);
   const wrap = document.getElementById('keyboard');
 
   // Determine the current base key + whether Shift is needed (capitals or shifted symbols)
@@ -1265,8 +1270,8 @@ function renderKeyboard(level, nextChar) {
       const fi = info ? info.finger : 0;
       const locked = !unlockedSet.has(k);
       const isCurrent = k === curBase && curBase.length === 1;
-      const isHome = homeRow.has(k) && !locked;
-      let cls = 'key' + (locked?' locked':'') + (isCurrent?' current':'') + (isHome?' home-row':'');
+      const isBump = (k === 'f' || k === 'j') && !locked;   // home-position ridge
+      let cls = 'key' + (locked?' locked':'') + (isCurrent?' current':'') + (isBump?' bump':'');
       const fattr = !locked ? `data-finger="${fi}"` : '';
       const fcolor = !locked ? FINGER_COLORS[fi] : 'var(--border)';
       const style = `width:${UNIT}px` + (isCurrent ? `;background:${fcolor}22;border-color:${fcolor}` : '');
@@ -1587,17 +1592,17 @@ function confirmResetProgress() {
   if (currentChar) selectChar(currentChar); // re-select so "Start with…" replays the new-user flow
 }
 
-function toggleLockLevels(on) {
-  settings.lockLevels = on;
+function toggleLockLevels(isChecked) {
+  settings.lockLevels = isChecked;
   saveSettings(settings);
   openLevelPicker(); // re-render so lock/unlock states update live
 }
 
-function toggleBreakReminders(on) {
-  settings.breakReminders = on;
+function toggleBreakReminders(isChecked) {
+  settings.breakReminders = isChecked;
   saveSettings(settings);
   // Re-arm (or disable) the timer for the current session immediately.
-  if (on) {
+  if (isChecked) {
     const mins = breakMinutesForAge(currentAge());
     nextBreakAt = Date.now() + mins * 60000;
   } else {

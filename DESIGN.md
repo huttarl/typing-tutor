@@ -178,8 +178,10 @@ includes `;`, which the older letter-only filter had dropped).
   including modifier/structural keys (Tab, Caps, Shift, Enter, Backspace, space)
   with proper unit widths. The real key widths produce the correct row stagger,
   so the bottom row aligns naturally (no margin hacks). Unlearned keys are shown
-  locked/greyed. The current key is highlighted in its finger color; home-row
-  keys carry a finger-colored border.
+  locked/greyed. Every learned (unlocked) key carries a finger-colored border at
+  all times (CSS `.key[data-finger]`); the current key gets extra emphasis — a
+  thicker border, a finger-colored background tint, and a slight scale-up. F and J
+  show small home-position bumps (`.key.bump`), mirroring a real keyboard.
 - **Capital letters** highlight the letter key *and* the Shift key on the
   opposite hand from the letter.
 - **Hands** (`drawHand` / `updateHands`) draw two SVG hands; the correct finger
