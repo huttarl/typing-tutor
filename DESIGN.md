@@ -92,6 +92,11 @@ Word-review lists were verified by script so that (a) every word is typeable
 with the letters learned by that level, and (b) each list actually exercises the
 newly introduced keys.
 
+The random **letter drills** apply the same principle: `generatePrompt` computes the
+keys a level adds (vs. the previous level) and weights them to roughly half of each
+drill, so a level like "Add V and N" really practices V and N (and "Add A and ;"
+includes `;`, which the older letter-only filter had dropped).
+
 ## Scoring
 
 - **Stars (0–3) per exercise.** Accuracy-only until the final sentence level,

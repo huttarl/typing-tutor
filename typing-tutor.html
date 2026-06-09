@@ -973,7 +973,6 @@ function promptLineCapacity() {
 }
 
 function generatePrompt(level, levelIdx) {
-  const keys = level.keys.filter(k => /[a-z]/.test(k));
   currentSource = ''; // only sentence levels set an attribution
 
   // ── Sentence levels: progress shortest → longest across the sentence levels ──
@@ -1043,15 +1042,28 @@ function generatePrompt(level, levelIdx) {
     }
   }
 
-  // ── Drill levels: randomized letter/syllable chunks from learned keys ──
+  // ── Drill levels: randomized chunks that emphasize this level's new keys ──
   const hasSpace = levelIdx >= 1;
   const cap = promptLineCapacity();
   // Desired length (for variety), but never longer than one line fits.
   const target = Math.min(24 + Math.floor(Math.random()*12), cap);
+
+  // The keys this level adds (vs. the previous level) are what it's meant to teach,
+  // so weight them to ~half of each chunk. This also restores ';' to its drill —
+  // the old letter-only filter dropped it, so "Add A and ;" never practiced it.
+  const prevKeys = levelIdx > 0 ? new Set(LEVELS[levelIdx-1].keys) : new Set();
+  const newKeys = level.keys.filter(k => !prevKeys.has(k));
+  const oldKeys = level.keys.filter(k =>  prevKeys.has(k));
+  const newWeight = (newKeys.length && oldKeys.length)
+    ? Math.max(1, Math.round(oldKeys.length / newKeys.length)) : 1;  // new keys ≈ old keys overall
+  const pool = [];
+  newKeys.forEach(k => { for (let i = 0; i < newWeight; i++) pool.push(k); });
+  oldKeys.forEach(k => pool.push(k));
+
   let s = '';
   while (true) {
     const len = 2 + Math.floor(Math.random()*3);
-    const chunk = Array.from({length:len}, ()=>keys[Math.floor(Math.random()*keys.length)]).join('');
+    const chunk = Array.from({length:len}, () => pool[Math.floor(Math.random()*pool.length)]).join('');
     const sep = (s && hasSpace) ? ' ' : '';
     if (s.length + sep.length + chunk.length > cap) break; // stop before it would wrap
     s += sep + chunk;

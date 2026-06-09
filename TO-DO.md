@@ -77,9 +77,12 @@ and author. (Not sure if the student should be asked to type these.)
 - [ ] Maybe add a confetti/star "explosion" over the page when the student completes an
 exercise with 3 stars. Or a small "celebration" for each 3-star exercise complete, and a bigger celebration for completing a level. Both with appropriate sound effect.
       - enforce a pause after completing a level, before displaying the next one. This makes sure the student is aware of having completed something! That pause could be enforced simply by means of the "celebration."
-- [ ] Level 4 says "Add A and ;", but the first two exercises have only one 'a' and no ';'
+- [x] Level 4 says "Add A and ;", but the first two exercises have only one 'a' and no ';'
       Not sure if this is a more general problem, but if you're adding certain keys,
       the new keys should (both/all) be used frequently in the exercise.
+      Fixed in the drill generator: it now computes each level's newly-added keys (vs. the
+      previous level) and weights them to ~half of each drill. Also restored ';' to drills —
+      the old letter-only filter dropped it, so "Add A and ;" never practiced it.
 - [ ] Add a link from the home page to the source code repo.
 - [ ] The first time the 'i' key is introduced, it's un-greyed-out but its outline isn't color coded according to what finger you're supposed to use. I'm sure it's not just 'i' either.
 - [ ] When a prompt wraps at a space, and it's time to type that space, the usual cursor that shows what to type next is not visible.
