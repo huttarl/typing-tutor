@@ -708,6 +708,7 @@ let completedLevels = new Set();   // indices this character has completed
 let passStreak = 0;                // consecutive passing exercises in the current level
 let totalStars = 0;
 let currentPrompt = '';
+let prevPrompt = null;
 let currentSource = '';   // attribution for the current sentence ('' if none)
 let startTime = null;
 let exerciseActive = false;
@@ -990,7 +991,12 @@ function generatePrompt(level, levelIdx) {
     const lo = Math.floor((tier / tierCount) * n);
     const hi = Math.floor(((tier + 1) / tierCount) * n);
     const slice = SENTENCES.slice(lo, Math.max(hi, lo + 1));
-    const chosen = slice[Math.floor(Math.random() * slice.length)];
+    let chosen = null;
+    do {
+      chosen = slice[Math.floor(Math.random() * slice.length)];
+      // slice.length > 1 guards against an infinite loop if a tier ever has a single sentence
+    } while (slice.length > 1 && chosen.text === prevPrompt);
+    prevPrompt = chosen.text;
     currentSource = chosen.source || '';
     return chosen.text;
   }
@@ -1004,7 +1010,7 @@ function generatePrompt(level, levelIdx) {
     while (len < target && attempts < 200) {
       attempts++;
       const w = list[Math.floor(Math.random()*list.length)];
-      // no immediate repeats; keep the whole line on one row
+      // no repeats anywhere in the line (stronger than adjacent-only); keep it on one row
       if (!parts.includes(w) && len + w.length + 1 <= cap + 1) { parts.push(w); len += w.length + 1; }
     }
     return parts.length ? parts.join(' ') : list[0];
@@ -1019,6 +1025,9 @@ function generatePrompt(level, levelIdx) {
     while (len < target && attempts < 200) {
       attempts++;
       const w = list[Math.floor(Math.random()*list.length)];
+      // Don't repeat the last ACCEPTED word (an index-vs-last-pick check can let
+      // "ask ask" through when a too-long candidate is rejected in between).
+      if (words.length && w === words[words.length-1]) continue;
       if (len + w.length + 1 <= cap + 1) { words.push(w); len += w.length + 1; } // +1: final join has no trailing space
     }
     if (words.length >= 2) return words.join(' ');
@@ -1042,6 +1051,7 @@ function generatePrompt(level, levelIdx) {
       while (len < target && attempts < 200) {
         attempts++;
         const w = pool[Math.floor(Math.random()*pool.length)];
+        if (words.length && w === words[words.length-1]) continue; // no adjacent repeats
         if (len + w.length + 1 <= cap + 1) { words.push(w); len += w.length + 1; }
       }
       if (words.length >= 2) return words.join(' ');
@@ -1069,8 +1079,19 @@ function generatePrompt(level, levelIdx) {
   let s = '';
   while (true) {
     const len = 2 + Math.floor(Math.random()*3);
-    const chunk = Array.from({length:len}, () => pool[Math.floor(Math.random()*pool.length)]).join('');
     const sep = (s && hasSpace) ? ' ' : '';
+    // Build the chunk one key at a time, never letting the same key run 3+ times
+    // in a row — including across chunk boundaries when no space separates them
+    // (level 0 has no spaces, so "jj"+"jj" would otherwise read as "jjjj").
+    let chunk = '';
+    for (let i = 0; i < len; i++) {
+      const tail = (sep || !s) ? chunk : s + chunk;        // what the new key will follow
+      const n = tail.length;
+      const runOfTwo = (n >= 2 && tail[n-1] === tail[n-2]);
+      const choices = runOfTwo ? pool.filter(k => k !== tail[n-1]) : pool;
+      chunk += choices.length ? choices[Math.floor(Math.random()*choices.length)]
+                              : pool[Math.floor(Math.random()*pool.length)];
+    }
     if (s.length + sep.length + chunk.length > cap) break; // stop before it would wrap
     s += sep + chunk;
     if (s.replace(/ /g,'').length >= target) break;        // reached desired length
