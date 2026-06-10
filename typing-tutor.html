@@ -722,6 +722,7 @@ let prevTypedLen = 0;   // to distinguish forward typing from backspacing
 let currentBirthYear = null;  // birth year of the active character (for break timing)
 let sessionStart = 0;         // when the current practice session began
 let nextBreakAt = Infinity;   // timestamp at which to next suggest a break
+let celebrationUntil = 0;     // advancing is paused until this time (level-up celebration)
 
 // ── AUDIO ──────────────────────────────────────────────────────────────────────
 let audioCtx = null;
@@ -747,6 +748,62 @@ function playTick(correct) {
     }
     o.start(); o.stop(ctx.currentTime + 0.15);
   } catch(e){}
+}
+
+// ── CELEBRATIONS ───────────────────────────────────────────────────────────────
+// One scheduled note (same oscillator approach as playTick — no audio files).
+function playNote(freq, delay, dur, type, peak) {
+  const ctx = getAudio();
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type; o.frequency.value = freq;
+  o.connect(g); g.connect(ctx.destination);
+  const t0 = ctx.currentTime + delay;
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+// Small celebration for a 3-star exercise: a quick, quiet trumpet-ish arpeggio.
+function playFanfare() {
+  try { [523.25, 659.25, 783.99].forEach((f, i) => playNote(f, i*0.09, 0.18, 'sawtooth', 0.05)); } catch(e){}
+}
+// Bigger fanfare for completing a level: rising arpeggio, then a held chord.
+function playLevelFanfare() {
+  try {
+    [392, 523.25, 659.25, 783.99].forEach((f, i) => playNote(f, i*0.12, 0.22, 'sawtooth', 0.06));
+    [523.25, 659.25, 783.99, 1046.5].forEach(f => playNote(f, 0.55, 0.8, 'triangle', 0.06));
+  } catch(e){}
+}
+// Confetti burst over the whole page: a temporary full-screen canvas (clicks pass
+// through), simple particles with gravity, faded out and removed when done.
+function launchConfetti(durationMs) {
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999';
+  canvas.width = innerWidth; canvas.height = innerHeight;
+  document.body.appendChild(canvas);
+  const c = canvas.getContext('2d');
+  const colors = FINGER_COLORS.concat(['#ef4444', '#f59e0b', '#22c55e']);
+  const parts = Array.from({length: 130}, () => ({
+    x: canvas.width/2 + (Math.random()-0.5)*canvas.width*0.4,
+    y: canvas.height*0.35,
+    vx: (Math.random()-0.5)*9, vy: -(4 + Math.random()*8),
+    w: 6+Math.random()*5, h: 4+Math.random()*4,
+    rot: Math.random()*Math.PI, vr: (Math.random()-0.5)*0.3,
+    color: colors[Math.floor(Math.random()*colors.length)],
+  }));
+  const start = performance.now();
+  requestAnimationFrame(function frame(now) {
+    const t = now - start;
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    c.globalAlpha = Math.max(0, 1 - t/durationMs);   // fade out over the run
+    for (const p of parts) {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.rot += p.vr;
+      c.save(); c.translate(p.x, p.y); c.rotate(p.rot);
+      c.fillStyle = p.color; c.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      c.restore();
+    }
+    if (t < durationMs) requestAnimationFrame(frame); else canvas.remove();
+  });
 }
 
 // ── STORAGE ──────────────────────────────────────────────────────────────────
@@ -1449,10 +1506,25 @@ function completeExercise(typed) {
   document.getElementById('reminder-text').innerHTML =
     `<span class="result-stars">${starStr}</span> <strong>${msgs[stars]}${levelNote}</strong>`
     + ` &nbsp;·&nbsp; <span class="result-hint">Enter or click Next →</span>`;
-  document.getElementById('result-next-btn').style.display = '';   // shown at the box's right edge
   // Redo (re-run the same prompt) — offered except after a level-up, where the
   // prompt belongs to the level we just left.
   document.getElementById('result-redo-btn').style.display = levelUp ? 'none' : '';
+
+  // Celebrations. A level-up gets confetti + a fanfare, and enforces a pause:
+  // advancing is blocked (see nextExercise) and the Next button is held back
+  // until the celebration ends, so the completion can't flash past unnoticed.
+  const nextBtn = document.getElementById('result-next-btn');
+  if (levelUp) {
+    const CELEBRATE_MS = 2200;
+    celebrationUntil = Date.now() + CELEBRATE_MS;
+    launchConfetti(CELEBRATE_MS);
+    playLevelFanfare();
+    nextBtn.style.display = 'none';
+    setTimeout(() => { if (!exerciseActive) nextBtn.style.display = ''; }, CELEBRATE_MS);
+  } else {
+    if (stars === 3) playFanfare();   // small, quiet flourish for a perfect exercise
+    nextBtn.style.display = '';       // shown at the box's right edge
+  }
 
   // At this natural stopping point, gently suggest a break if it's time.
   const breakNow = maybeSuggestBreak();
@@ -1510,9 +1582,11 @@ function closeAgeModal() {
 }
 
 function nextExercise() {
+  if (Date.now() < celebrationUntil) return;   // hold for the level-up celebration
   showExercise();
 }
 function redoExercise() {
+  if (Date.now() < celebrationUntil) return;
   showExercise(true);   // same prompt; counts as a normal attempt
 }
 

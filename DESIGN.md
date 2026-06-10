@@ -171,6 +171,11 @@ includes `;`, which the older letter-only filter had dropped).
   close the level picker. While any modal is open it stays out of the way.
 - Audio feedback uses the Web Audio API (oscillator) — a soft tick for correct
   keys, a lower buzz for errors. No audio files needed.
+- **Celebrations** (same no-files approach): a quiet trumpet-ish arpeggio for a
+  3-star exercise (`playFanfare`), and for a level-up a full-page canvas confetti
+  burst (`launchConfetti`) plus a bigger fanfare — with an enforced ~2s pause
+  (`celebrationUntil` gates `nextExercise`, and the Next button is held back) so
+  the completion registers before the next exercise appears.
 
 ## Keyboard & hand diagrams
 

@@ -39,7 +39,7 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
 - [ ] Increased the word bank to include more variety. Use classic authors / poets
 such as Shakespeare, Hawthorne, Poe (but make sure the spelling is correct by modern standards).
 - [x] Go through the attributed quotes and remove the ones that dishonor the original quote by cutting it too short. E.g. "It is a truth universally acknowledged." Or else extend them to the full original quote; or at the very least, use an ellipsis instead of just ending it with a period. This will require checking quotes.
-- [ ] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
+- [x] When practicing "real words" levels, prevent repetition of the same word anywhere within the exercise.
 - [x] When practicing actual sentences or longer passages from literature, display the title
 and author. (Not sure if the student should be asked to type these.)
 
@@ -69,16 +69,19 @@ and author. (Not sure if the student should be asked to type these.)
       a hosted copy, not the offline app the children use).
 - [x] Words from great books shouldn't be stripped of their capitalization.
       And words that require punctuation, like "Mrs.", shouldn't be stripped of it.
-- [ ] When learning / practicing individual characters, I don't think it makes sense to have more than 2 in a row of the same character. Because that almost never happens in English... or in coding.
+- [x] When learning / practicing individual characters, I don't think it makes sense to have more than 2 in a row of the same character. Because that almost never happens in English... or in coding.
 Except for ellipses...!
-- [ ] When presenting whole sentences and passages, make sure not to repeat the same passage
+- [x] When presenting whole sentences and passages, make sure not to repeat the same passage
       twice in a row.
 - [ ] We'll probably have to check our quotes. I found at least one misquote. Consider wikiquotes to be authoritative.
 - [x] Maybe add a "Redo" button at the bottom next to "Next" that allows the user to redo the exercise they just did, if desired.
       Re-runs the same prompt (and citation); counts as a normal attempt (affects the streak like any exercise). Hidden after a level-up.
-- [ ] Maybe add a confetti/star "explosion" over the page when the student completes an
+- [x] Add a confetti/star "explosion" over the page when the student completes an
 exercise with 3 stars. Or a small "celebration" for each 3-star exercise complete, and a bigger celebration for completing a level. Both with appropriate sound effect.
       - enforce a pause after completing a level, before displaying the next one. This makes sure the student is aware of having completed something! That pause could be enforced simply by means of the "celebration."
+      Done: 3-star exercise → quiet trumpet-ish arpeggio (Web Audio, no files); level-up → full-page
+      canvas confetti + bigger fanfare, with a 2.2s enforced pause (Enter/Next blocked, Next button
+      held back until the celebration ends).
 - [x] Level 4 says "Add A and ;", but the first two exercises have only one 'a' and no ';'
       Not sure if this is a more general problem, but if you're adding certain keys,
       the new keys should (both/all) be used frequently in the exercise.
@@ -86,7 +89,7 @@ exercise with 3 stars. Or a small "celebration" for each 3-star exercise complet
       previous level) and weights them to ~half of each drill. Also restored ';' to drills —
       the old letter-only filter dropped it, so "Add A and ;" never practiced it.
 - [ ] Add a link from the home page to the source code repo.
-- [ ] The first time the 'i' key is introduced, it's un-greyed-out but its outline isn't color coded according to what finger you're supposed to use. I'm sure it's not just 'i' either.
+- [x] The first time the 'i' key is introduced, it's un-greyed-out but its outline isn't color coded according to what finger you're supposed to use. I'm sure it's not just 'i' either.
 - [ ] When a prompt wraps at a space, and it's time to type that space, the usual cursor that shows what to type next is not visible.
 - [x] Add more common punctuation: hyphens, colons & semi-colons, apostrophes and double-quotes, question mark, exclamation mark, slash. Put them into the lessons & exercises,
 and add some sentences from literature that include these punctuation.
