@@ -354,6 +354,14 @@ body {
   margin-top: .85rem; line-height: 1.5; max-width: 420px;
   margin-left: auto; margin-right: auto;
 }
+.pick-footer {
+  text-align: right; margin-top: 1.5rem; font-size: .8rem; color: var(--text3);
+}
+.pick-footer a {
+  color: var(--text2); text-decoration: none; font-weight: 600;
+  display: inline-flex; align-items: center; gap: .35rem;
+}
+.pick-footer a:hover { color: var(--accent); text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -365,6 +373,9 @@ body {
   <div class="avatar-grid" id="avatar-grid"></div>
   <button class="start-btn" id="start-btn" disabled onclick="startLesson()">Choose a character to start!</button>
   <p class="save-hint">Your progress is saved under the character you choose. Each student should pick their own character to keep their progress separate.</p>
+  <footer class="pick-footer">
+    <a href="https://github.com/huttarl/typing-tutor"><tt>// Source code</tt></a>
+  </footer>
 </div>
 
 <!-- LESSON SCREEN -->

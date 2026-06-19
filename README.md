@@ -4,6 +4,8 @@ A free, progressive touch-typing tutor for children — built as a single
 self-contained HTML file. No login, no accounts, no server, no build step.
 Open `typing-tutor.html` in a browser and start typing.
 
+**▶ [Try it online](https://huttar.net/lars-kathy/school/typing-tutor.html)** — no installation needed.
+
 ## What it does
 
 - **Progressive, finger-by-finger curriculum.** Keys are introduced one or two
