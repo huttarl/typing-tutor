@@ -63,12 +63,12 @@ plain data tables near the top of the script and are meant to be easy to edit.
 See [`DESIGN.md`](DESIGN.md) for the architecture and the rationale behind the
 curriculum and scoring decisions, and [`TO-DO.md`](TO-DO.md) for the backlog.
 
-In case you didn't get here from Github, the source repo is at
+In case you didn't get here from the GitHub repo, the source code is at
 [here](https://github.com/huttarl/typing-tutor).
 
 ## Status
 
-In beta. Hosted online (see top of document). I have some more ideats (see [`TO-DO.md`](TO-DO.md)
+In beta. Hosted online (see top of document). I have some more ideas (see [`TO-DO.md`](TO-DO.md)
 but I've stopped working on it for now.
 
 ## License
