@@ -589,6 +589,22 @@ const LEVELS = [
     'July', 'November', 'Charlotte', 'China', 'Antarctica',
     'United States', 'North Carolina', 'the North Sea'] },
 
+  // ── Caps Lock (whole words in capitals): tap it on, type the word, tap it off.
+  //    The drill mixes lowercase, Initial-cap (Shift) and ALL-CAPS (Caps Lock)
+  //    words so the student learns which key each case needs. Coaching for the
+  //    all-caps runs lives in renderFingerReminder (see MIN_CAPS_RUN). ──
+  {keys:K_BOTTOM, label:'Caps Lock — whole words in capitals', capsLock:true, phrases:[
+    // Each phrase intermixes lowercase, Initial-cap (Shift) and ALL-CAPS (Caps
+    // Lock) words, so a drill line practices choosing the right key for each.
+    'stop STOP again', 'go slow or FAST', 'read the big SIGN', 'we won the GAME',
+    'loud and CLEAR', 'a big loud BANG', 'HELLO there friend', 'watch for the ICE',
+    'please do not RUN', 'turn left then RIGHT', 'small then BIG', 'quiet then LOUD',
+    'up and then DOWN', 'Mom said WOW', 'a cat and a DOG', 'win or LOSE',
+    'push then PULL', 'this way to the EXIT', 'do not enter HERE', 'help me PLEASE',
+    'the sign says STOP', 'Dan yelled HELP', 'keep it very QUIET', 'the USA and China',
+    'we visited NASA', 'open the DOOR', 'a warm FIRE', 'find the way OUT', 'Sara ran FAST',
+    'BBC World Service', 'Born in the USA', 'Type your PIN into the ATM', 'a COVID vaccine'] },
+
   // ── Punctuation group (all letters known; teach a few marks at a time) ──
   {keys:K_PUNCT_1, label:'Comma and period', phrases:[
     'ask, add, all.', 'far, near, here.', 'this, that, the other.', 'one, two, three.',
@@ -674,9 +690,9 @@ const LEVEL_GROUPS = [
   {label: 'Top row',        start: 6,  end: 12},
   {label: 'Bottom row',     start: 13, end: 17},
   {label: 'Mixed words',    start: 18, end: 18},
-  {label: 'Capitals',       start: 19, end: 19},
-  {label: 'Punctuation',    start: 20, end: 25},
-  {label: 'Real sentences', start: 26, end: 28},
+  {label: 'Capitals',       start: 19, end: 20},
+  {label: 'Punctuation',    start: 21, end: 26},
+  {label: 'Real sentences', start: 27, end: 29},
 ];
 
 // Large word bank for the mixed-word level(s). Selection is random, so order is
@@ -1096,8 +1112,8 @@ function showExercise(keepPrompt) {   // keepPrompt: re-run the same prompt (Red
 
   const firstChar = currentPrompt[0] || '';
   renderPrompt('');
-  renderFingerReminder(firstChar, level, levelIdx);  // also clears the result styling
-  renderKeyboard(level, firstChar);
+  renderFingerReminder(firstChar, level, levelIdx, 0);  // also clears the result styling
+  renderKeyboard(level, firstChar, 0);
   updateHands(firstChar);
   document.getElementById('break-note').innerHTML = '';   // result + Next live in the instruction box, cleared by renderFingerReminder above
 }
@@ -1277,7 +1293,36 @@ function groupOf(levelIdx) {
   return g ? g.label : '';
 }
 
-function renderFingerReminder(nextChar, level, levelIdx) {
+// ── Caps Lock detection ──
+// A run of this many capital letters in a row is worth Caps Lock rather than
+// holding Shift for each — used to coach the Caps Lock level and to nudge the
+// student in fluency practice.
+const MIN_CAPS_RUN = 3;
+const isUpper = c => c >= 'A' && c <= 'Z';
+// Length of the unbroken run of capital letters that text[pos] belongs to (0 if
+// text[pos] isn't a capital). Spaces and other characters break the run.
+function capsRunLength(text, pos) {
+  if (!text || pos < 0 || pos >= text.length || !isUpper(text[pos])) return 0;
+  let start = pos, end = pos;
+  while (start > 0 && isUpper(text[start-1])) start--;
+  while (end < text.length-1 && isUpper(text[end+1])) end++;
+  return end - start + 1;
+}
+// The whitespace-delimited word that position `pos` sits in (or the next word,
+// if pos is on a space). Used to spot an all-caps word the cursor is entering.
+function wordAt(text, pos) {
+  if (!text) return '';
+  while (pos < text.length && text[pos] === ' ') pos++;
+  let start = pos; while (start > 0 && text[start-1] !== ' ') start--;
+  let end = pos;   while (end < text.length && text[end] !== ' ') end++;
+  return text.slice(start, end);
+}
+function hasCapsRun(word, min) {
+  const m = word.match(/[A-Z]+/g);
+  return m ? m.some(r => r.length >= min) : false;
+}
+
+function renderFingerReminder(nextChar, level, levelIdx, pos) {
   const el  = document.getElementById('finger-reminder');
   const dot = document.getElementById('reminder-dot');
   const txt = document.getElementById('reminder-text');
@@ -1297,15 +1342,24 @@ function renderFingerReminder(nextChar, level, levelIdx) {
   const isSmall = levelIdx >= 13;   // by the bottom-row group, keep it subtle
   el.className = 'finger-reminder only-lesson' + (isLarge ? ' large' : isSmall ? ' small' : '');
 
-  // Positioning hint — shown only while learning the home row, where it matters most.
+  // Positioning hint — home-row placement, or the Caps Lock explainer on that level.
   if (inHomeGroup) {
     posEl.style.display = '';
     posEl.textContent = (levelIdx === 0)
       ? 'Place your left index finger on F and your right index finger on J. Feel the little bumps that mark the home keys.'
       : 'Rest your fingers on the home row: A S D F (left hand) and J K L ; (right hand). Feel the bumps on F and J.';
+  } else if (level.capsLock) {
+    posEl.style.display = '';
+    posEl.innerHTML = 'For a whole word in CAPITALS, tap <b>Caps Lock</b> (the key above the left Shift) once to turn it on, type the letters, then tap it again to turn it off. For a single capital, hold <b>Shift</b> instead.';
   } else {
     posEl.style.display = 'none';
   }
+
+  // Is the next key inside a run of capitals long enough to warrant Caps Lock?
+  const runLen = isUpper(raw) ? capsRunLength(currentPrompt, pos) : 0;
+  const inCapsRun = runLen >= MIN_CAPS_RUN;
+  const capsRunStart = inCapsRun && !isUpper(currentPrompt[pos-1] || '');   // first capital of the run
+  const offCapsRun = pos > 0 && capsRunLength(currentPrompt, pos-1) >= MIN_CAPS_RUN && !isUpper(raw);  // just past a run
 
   if (info) {
     const fc = FINGER_COLORS[info.finger];
@@ -1316,13 +1370,23 @@ function renderFingerReminder(nextChar, level, levelIdx) {
     el.style.borderLeft = '4px solid ' + fc;
 
     if (pair.base === ' ') {
-      txt.textContent = 'Press the space bar with your thumb.';
+      txt.textContent = offCapsRun
+        ? 'Tap Caps Lock again to turn it off, then press the space bar with your thumb.'
+        : 'Press the space bar with your thumb.';
+    } else if (inCapsRun) {
+      // Whole-word capitals: Caps Lock, not Shift-per-letter.
+      txt.textContent = capsRunStart
+        ? `This word is in CAPITALS — tap Caps Lock with your left pinky, then press ${keyName(raw)} with your ${hand} ${fname}.`
+        : `Caps Lock is on — just press ${keyName(raw)} with your ${hand} ${fname} (no Shift).`;
     } else if (pair.shift) {
-      // Capital or shifted symbol: hold Shift with the opposite hand, tap the key.
+      // Single capital or shifted symbol: hold Shift with the opposite hand, tap the key.
       const shiftHand = info.hand === 'L' ? 'right' : 'left';
-      txt.textContent = `Hold Shift with your ${shiftHand} pinky, then press ${keyName(raw)} with your ${hand} ${fname}.`;
+      const off = offCapsRun ? 'Tap Caps Lock off, then ' : '';
+      txt.textContent = `${off}Hold Shift with your ${shiftHand} pinky, then press ${keyName(raw)} with your ${hand} ${fname}.`;
     } else {
-      txt.textContent = `Use your ${hand} ${fname} to press ${keyName(raw)}.`;
+      txt.textContent = offCapsRun
+        ? `Tap Caps Lock again to turn it off, then press ${keyName(raw)} with your ${hand} ${fname}.`
+        : `Use your ${hand} ${fname} to press ${keyName(raw)}.`;
     }
   } else {
     dot.style.background = '#ccc';
@@ -1402,14 +1466,16 @@ const KB_ROWS = [
 const UNIT = 30;   // px per key unit
 const GAP  = 4;    // px gap between keys
 
-function renderKeyboard(level, nextChar) {
+function renderKeyboard(level, nextChar, pos) {
   const unlockedSet = new Set(level.keys);
   const wrap = document.getElementById('keyboard');
 
   // Determine the current base key + whether Shift is needed (capitals or shifted symbols)
   const raw = nextChar || '';
   const pair = shiftPair(raw);              // { base, shift } or null
-  const needsShift = pair ? pair.shift : false;
+  // Inside a long run of capitals, highlight Caps Lock instead of Shift.
+  const inCapsRun = isUpper(raw) && capsRunLength(currentPrompt, pos) >= MIN_CAPS_RUN;
+  const needsShift = pair ? pair.shift && !inCapsRun : false;
   const curBase = pair ? pair.base : '';
   const curInfo = pair ? KEY_INFO[curBase] : null;
   // Use the Shift key on the OPPOSITE hand from the key being pressed.
@@ -1423,10 +1489,11 @@ function renderKeyboard(level, nextChar) {
         const isSpace = k.mod === 'space';
         const spaceActive = isSpace && nextChar === ' ';
         const shiftActive = needsShift && k.mod === shiftSide;
+        const capsActive = inCapsRun && k.mod === 'caps';   // Caps Lock, typed by the left pinky
         let style = `width:${w}px`;
         if (spaceActive) style += `;background:${FINGER_COLORS[4]}22;border-color:${FINGER_COLORS[4]}`;
-        if (shiftActive) style += `;background:${FINGER_COLORS[0]}22;border-color:${FINGER_COLORS[0]}`;
-        const cls = 'key key-mod' + ((spaceActive||shiftActive)?' current':'');
+        if (shiftActive || capsActive) style += `;background:${FINGER_COLORS[0]}22;border-color:${FINGER_COLORS[0]}`;
+        const cls = 'key key-mod' + ((spaceActive||shiftActive||capsActive)?' current':'');
         return `<div class="${cls}" style="${style}">${k.label}</div>`;
       }
       // character key
@@ -1477,8 +1544,8 @@ document.getElementById('typing-input').addEventListener('input', function(e) {
 
   const nextChar = typed.length < currentPrompt.length ? currentPrompt[typed.length] : '';
   const levelIdx = clampedLevelIndex();
-  renderFingerReminder(nextChar, getLevel(), levelIdx);
-  renderKeyboard(getLevel(), nextChar);
+  renderFingerReminder(nextChar, getLevel(), levelIdx, typed.length);
+  renderKeyboard(getLevel(), nextChar, typed.length);
   updateHands(nextChar);
 
   if (typed.length >= currentPrompt.length) {
@@ -1859,8 +1926,11 @@ function renderFluency() {
   document.getElementById('stat-lines').textContent = nLines;
   document.getElementById('stat-fluency-stars').innerHTML = fluencyStars(nLines) + '&starf;';
   const done = typed.length >= cur.length;
+  // While the cursor sits on/at an ALL-CAPS word (≥ MIN_CAPS_RUN), nudge Caps Lock.
+  const capsAhead = !done && hasCapsRun(wordAt(cur, typed.length), MIN_CAPS_RUN);
   document.getElementById('fluency-hint').textContent =
-    done ? (cur.length ? 'Press Enter ↵' : 'Blank line — press Enter ↵') : '';
+    done ? (cur.length ? 'Press Enter ↵' : 'Blank line — press Enter ↵')
+         : (capsAhead ? '⇪ This word is in CAPITALS — use the Caps Lock key.' : '');
 }
 
 // Enter completes the current line (its newline) and moves to the next.

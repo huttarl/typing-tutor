@@ -73,6 +73,12 @@ matches how touch typing is taught. The physical rows are grouped:
    capital (`Darcy`) or a mark it can't yet type (`Mr.`).
 5. **Capitals** — a dedicated Shift lesson (curated `phrases` of capitalized
    words, spanning both Shift keys), taught before capitals are needed downstream.
+   Then a **Caps Lock** level (`capsLock:true`) whose `phrases` intermix
+   lowercase, Initial-cap, and ALL-CAPS words; the finger coach detects a run of
+   ≥ `MIN_CAPS_RUN` (3) capitals and switches its advice from "hold Shift" to
+   "tap Caps Lock on … type … tap it off," highlighting the Caps key instead of
+   Shift. The same `MIN_CAPS_RUN` powers a Caps-Lock nudge in fluency practice
+   when the cursor reaches an all-caps word.
 6. **Punctuation** — the common marks taught a few at a time, each level via a
    curated `phrases` list (see Data model): comma/period (which also practices the
    abbreviations `Mr.`/`Mrs.`), apostrophe (`can't`, `men's`),
