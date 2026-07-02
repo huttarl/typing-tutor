@@ -363,17 +363,6 @@ body {
 }
 .pick-footer a:hover { color: var(--accent); text-decoration: underline; }
 
-/* secondary "Fluency practice" button on the home screen */
-.read-btn {
-  display: block; width: 100%; margin-top: .6rem;
-  background: var(--surface); color: var(--accent);
-  border: 2px solid var(--accent); border-radius: var(--radius);
-  padding: .7rem; font-size: 1rem; font-weight: 700; font-family: 'Nunito', sans-serif;
-  cursor: pointer; transition: background .15s;
-}
-.read-btn:hover { background: var(--accent-light); }
-.read-btn:disabled { border-color: var(--border); color: var(--text3); cursor: default; }
-
 /* library picker (reuses the .modal shell) */
 .lib-note { font-size: .82rem; color: var(--text2); margin: .2rem 0; }
 .lib-item {
@@ -394,7 +383,15 @@ body {
 #fluency-screen { padding: 1rem 1.25rem; width: max-content; max-width: 100%; margin: 0 auto; }
 .fluency-topbar { display: flex; align-items: center; gap: .75rem; margin-bottom: .5rem; }
 .fluency-title { flex: 1; text-align: center; font-weight: 800; font-size: 1.05rem; }
-.fluency-meta { display: flex; justify-content: space-between; font-size: .82rem; color: var(--text2); margin-bottom: .5rem; }
+.fluency-reminder {
+  background: var(--amber-light); border-left: 4px solid var(--amber); border-radius: var(--radius-sm);
+  padding: .5rem .8rem; font-size: .85rem; color: #8a5a00; margin-bottom: .5rem;
+}
+.fluency-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; font-size: .82rem; color: var(--text2); margin-bottom: .5rem; }
+.fluency-stats { display: flex; align-items: baseline; gap: 1rem; }
+.fs-acc { font-size: 1rem; color: var(--text); }
+.fs-acc b { font-size: 1.25rem; color: var(--accent); font-weight: 800; }
+.fs-sub { font-size: .78rem; color: var(--text3); }
 .teleprompter {
   background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
   padding: 1.1rem 1.25rem; font-family: 'Nunito Mono', monospace; font-size: 1.2rem; line-height: 1.7;
@@ -419,7 +416,6 @@ body {
   <p class="pick-sub">Who is typing today? Pick your character!</p>
   <div class="avatar-grid" id="avatar-grid"></div>
   <button class="start-btn" id="start-btn" disabled onclick="startLesson()">Choose a character to start!</button>
-  <button class="read-btn" id="read-btn" disabled onclick="startFluency()">📖 Fluency practice</button>
   <p class="save-hint">Your progress is saved under the character you choose. Each student should pick their own character to keep their progress separate.</p>
   <footer class="pick-footer">
     <a href="https://github.com/huttarl/typing-tutor"><tt>// Source code</tt></a>
@@ -458,14 +454,22 @@ body {
   </div>
 </div>
 
-<!-- READING PRACTICE SCREEN (long-form passages from books) -->
+<!-- FLUENCY PRACTICE SCREEN (long-form passages from books) -->
 <div id="fluency-screen" class="screen">
   <div class="fluency-topbar">
     <button class="back-btn" onclick="exitFluency()">← Back</button>
     <div class="fluency-title" id="fluency-title"></div>
     <button class="back-btn" onclick="fluencyRestart()">↻ Restart</button>
   </div>
-  <div class="fluency-meta"><span id="fluency-progress"></span><span>Accuracy: <b id="fluency-acc">—</b></span></div>
+  <div class="fluency-reminder">✋ Use the correct fingers for every key — and remember, <b>accuracy matters more than speed</b>.</div>
+  <div class="fluency-meta">
+    <span id="fluency-progress"></span>
+    <span class="fluency-stats">
+      <span class="fs-acc">accuracy <b id="fluency-acc">—</b></span>
+      <span class="fs-sub">wpm <b id="fluency-wpm">—</b></span>
+      <span class="fs-sub">lines <b id="fluency-lines">0</b> · <span id="fluency-stars">0</span>&starf;</span>
+    </span>
+  </div>
   <div class="teleprompter" id="teleprompter" onclick="document.getElementById('fluency-input').focus()"></div>
   <div class="fluency-hint" id="fluency-hint"></div>
   <input id="fluency-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
@@ -897,10 +901,14 @@ function loadState(id) {
       stars: parsed.stars || 0,
       streak: parsed.streak || 0,            // consecutive passes toward leveling up
       birthYear: parsed.birthYear || null,  // for the age-based break timer
-      fluency: parsed.fluency || { lastBook: null, pos: {} }  // fluency-practice place per book
+      fluency: normalizeFluency(parsed.fluency)  // fluency-practice place + lines typed per book
     };
   }
-  catch(e) { return {level:0,completed:[],stars:0,streak:0,birthYear:null,fluency:{lastBook:null,pos:{}}}; }
+  catch(e) { return {level:0,completed:[],stars:0,streak:0,birthYear:null,fluency:{lastBook:null,pos:{},lines:0}}; }
+}
+function normalizeFluency(f) {
+  f = f || {};
+  return { lastBook: f.lastBook || null, pos: f.pos || {}, lines: f.lines || 0 };
 }
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
@@ -954,7 +962,8 @@ function renderAvatarGrid() {
     const s = loadState(a.id);
     const level = Math.min(s.level, LEVELS.length-1);
     const hasProgress = characterHasProgress(s);
-    const progressText = hasProgress ? `Level ${level+1}  (${s.stars}&starf;)` : 'New — not started';
+    const totalStars = s.stars + fluencyStars((s.fluency && s.fluency.lines) || 0);
+    const progressText = hasProgress ? `Level ${level+1}  (${totalStars}&starf;)` : 'New — not started';
     return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')" ondblclick="selectAndStart('${a.id}')">
       <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
       <div class="avatar-name">${a.name}</div>
@@ -969,7 +978,6 @@ function selectChar(id) {
   document.getElementById('card-'+id).classList.add('selected');
   const btn = document.getElementById('start-btn');
   btn.disabled = false;
-  document.getElementById('read-btn').disabled = false;
   const name = ANIMALS.find(a=>a.id===id).name;
   const hasProgress = characterHasProgress(loadState(id));
   btn.textContent = (hasProgress ? 'Continue with ' : 'Start with ') + name + '!';
@@ -1008,7 +1016,7 @@ function enterLesson(s) {
   totalStars = s.stars;
   passStreak = s.streak || 0;
   currentBirthYear = s.birthYear;
-  fluencyState = s.fluency || { lastBook: null, pos: {} };
+  fluencyState = normalizeFluency(s.fluency);
   beginSessionTimer();
   document.getElementById('pick-screen').classList.remove('active');
   document.getElementById('lesson-screen').classList.add('active');
@@ -1684,11 +1692,15 @@ const BOOKS = [
   {id:'moby',       title:'Moby Dick',                   author:'Herman Melville',  file:'material/pg2701-moby-dick.txt'},
 ];
 
-let fluencyState = { lastBook: null, pos: {} };  // persisted per character
+let fluencyState = { lastBook: null, pos: {}, lines: 0 };  // persisted per character
 let fluencyMode = false;
 let fluencyBook = null;
 let fluencyLines = [];   // normalized body lines (blank lines collapsed to one)
 let fluencyPos = 0;      // index of the line currently being typed
+
+// Bonus stars for fluency practice, awarded logarithmically by lines typed:
+// 25 → 1, 50 → 2, 100 → 3, … (each doubling adds a star).
+function fluencyStars(lines) { return (lines < 25) ? 0 : Math.floor(Math.log2(lines / 25)) + 1; }
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -1825,6 +1837,14 @@ function renderFluency() {
   }
   const acc = keystrokes > 0 ? Math.round(((keystrokes - keyErrors) / keystrokes) * 100) : 100;
   document.getElementById('fluency-acc').textContent = keystrokes ? acc + '%' : '—';
+  // WPM (running; 5 chars = 1 word), shown smaller than accuracy on purpose.
+  // Wait ~2s of typing before showing it, so it doesn't spike on the first keys.
+  const mins = startTime ? (Date.now() - startTime) / 60000 : 0;
+  document.getElementById('fluency-wpm').textContent =
+    (keystrokes && mins >= 0.03) ? Math.round((keystrokes / 5) / mins) : '—';
+  const nLines = fluencyState.lines || 0;
+  document.getElementById('fluency-lines').textContent = nLines;
+  document.getElementById('fluency-stars').textContent = fluencyStars(nLines);
   const done = typed.length >= cur.length;
   document.getElementById('fluency-hint').textContent =
     done ? (cur.length ? 'Press Enter ↵' : 'Blank line — press Enter ↵') : '';
@@ -1835,6 +1855,12 @@ function fluencyAdvance() {
   if (fluencyPos >= fluencyLines.length) return;
   const cur = fluencyLines[fluencyPos] || '';
   if (document.getElementById('fluency-input').value.length < cur.length) return;  // line not finished
+  // Count each completed non-blank line; celebrate crossing a star milestone.
+  if (cur.length > 0) {
+    const before = fluencyStars(fluencyState.lines || 0);
+    fluencyState.lines = (fluencyState.lines || 0) + 1;
+    if (fluencyStars(fluencyState.lines) > before) { playFanfare(); launchConfetti(1600); }
+  }
   fluencyPos++;
   document.getElementById('fluency-input').value = '';
   prevTypedLen = 0;
@@ -1863,17 +1889,6 @@ function fluencyRestart() {
   document.getElementById('fluency-input').focus();
 }
 
-// Entry from the home screen. Load the character's full state first so saveProgress
-// keeps level progress intact while we also persist the fluency place.
-function startFluency() {
-  if (!currentChar) return;
-  const s = loadState(currentChar);
-  levelIndex = s.level; completedLevels = new Set(s.completed); totalStars = s.stars;
-  passStreak = s.streak || 0; currentBirthYear = s.birthYear;
-  fluencyState = s.fluency || { lastBook: null, pos: {} };
-  settings = loadSettings();
-  openLibrary();
-}
 
 document.getElementById('fluency-input').addEventListener('input', function() {
   if (!fluencyMode) return;
@@ -1886,7 +1901,7 @@ document.getElementById('fluency-input').addEventListener('input', function() {
       keystrokes++;
       const wrong = typed[i] !== cur[i];
       if (wrong) keyErrors++;
-      if (i === typed.length - 1) playTick(!wrong);
+      if (i === typed.length - 1 && wrong) playTick(false);  // fluency: sound on mistakes only
     }
   }
   prevTypedLen = typed.length;
@@ -1924,6 +1939,19 @@ function openLevelPicker() {
             <div class="lvl-list">${items.join('')}</div>`;
   }).join('');
 
+  // Fluency practice sits after all the levels — a never-ending "level" of real
+  // books. It unlocks once the last structured level is complete.
+  const fluencyUnlocked = !settings.lockLevels || completedLevels.has(LEVELS.length - 1);
+  const fluencyHtml = `
+    <div class="lvl-group-label">Beyond the levels</div>
+    <div class="lvl-list">
+      <button class="lvl-item${fluencyUnlocked ? '' : ' locked'}" ${fluencyUnlocked ? 'onclick="openLibrary()"' : ''}>
+        <span class="lvl-num">📖</span>
+        <span class="lvl-label">Fluency practice — type whole books</span>
+        <span class="lvl-status">${fluencyUnlocked ? 'Open' : '🔒 Locked'}</span>
+      </button>
+    </div>`;
+
   const lockChecked = settings.lockLevels ? 'checked' : '';
   document.getElementById('modal-mount').innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this)closeLevelPicker()">
@@ -1947,6 +1975,7 @@ function openLevelPicker() {
           ? 'Break timing adapts to the student\u2019s age (about 5\u201315 minutes).'
           : 'Break reminders are off.'}</div>
         ${groupsHtml}
+        ${fluencyHtml}
         <div class="reset-zone">${resetZoneInner()}</div>
       </div>
     </div>`;
