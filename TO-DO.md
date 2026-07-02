@@ -6,6 +6,42 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
 
 ## Pedagogy / content
 
+- [ ] Long-form content: Once the student has passed all the exercises about learning
+  specific keys, they need more material to practice.
+      MVP DONE: "Reading practice" button on the home screen → library picker → teleprompter
+      typing of whole books, fetched from same-origin material/*.txt (online only). First line of
+      each file is {TextStart, BodyStart}; we start at BodyStart. Em dashes/curly quotes/ellipsis/
+      underscores/tabs normalized to plain typeable text; line-by-line with Enter for each line
+      break (incl. blank lines); place saved per book per character; finishing a book celebrates.
+      STILL OPEN below: Bible reference picker, chapter/"start anywhere" navigation, keyboard/hands
+      in reading mode, and reviewing each book's BodyStart (e.g. Moby Dick's ETYMOLOGY/EXTRACTS).
+      - We can only put so much into one HTML file. So we need material that we can freely
+        download -- either entire books (for long-term offline use), or at least one passage at a time
+        (more dependent on internet connection.
+      - [ ] Books they've been reading: Hugo: Hunchback, Les Mis; Austen; Dickens; Milne;
+        Moby Dick; Hawthorne; Longfellow poems; Alice in Wonderland; Shakespeare favorites; George Macdonald;
+        Tolkien; what is available on Pr Gutenberg?
+        - [ ] probably need to remember both what book they were on, and where in the book.
+        - [ ] For a download like https://www.gutenberg.org/cache/epub/2701/pg2701.txt,
+          we'll need the program to know what to skip past and where to start.
+          - [ ] Then figure out what to do about formatting, like aligned columns in Moby Dick,
+            and em dashes if that's what they are, and underscores that are apparently intended
+            to format as italics. Do we require the student to type all these exactly?
+            What about single hyphens that are apparently meant to substitute for em dashes?
+            "Some years ago—never mind how long precisely—having little or no money"
+          - [ ] What about tabs? They're helpful to learn, but difficult to type from a text,
+            without extra info, since they look identical to spaces much of the time.
+            So how about we don't start with Moby Dick, at least from the prefatory material.
+            - [ ] For scalability, allow the user to decide where to start, so they can skip
+              the prefatory stuff in books I haven't processed.
+      - [ ] Bible passages:
+            - [ ] Allow focusing sentence practice on specific passages they want to memorize;
+            maybe let them specify a verse reference? Then remember their history.
+            But if they're trying to memorize, make sure they have access to the version they
+            want to memorize.
+            - [ ] Offer recommended passages in a menu, like all the Psalms
+      - [ ] The app probably needs to show more than one line at a time, for context. So change the display
+        a bit.
 - [x] **More reps on foundational levels.** Replaced the flat "3 exercises"
       gate with mastery-based progression (`masteryGoal`/`passStreak`): advance
       only after 3 consecutive exercises clear a per-group accuracy bar (Home row
@@ -27,8 +63,6 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
       opposite-hand Shift rule). Note: capitals already appear in sentences and
       the coaching/keyboard already highlight Shift, but there is no dedicated
       Shift-teaching level yet.
-- [ ] **Curated Bible passages.** Allow focusing sentence practice on specific
-      passages the family wants to learn.
 - [x] **Show purpose of level.** At top of screen during exercises, show a brief
       purpose statement like "Add v and n" or "practice home-row words" or "review
       letters from top two rows." This helps motivation by connecting activity to progress.
@@ -54,10 +88,25 @@ and author. (Not sure if the student should be asked to type these.)
 
 ## Technical / quality
 
-- [ ] **Offline support.** Ensure the app runs fully from a `file://` path with
+- long-form practice:
+  - [ ] Move fluency practice button from home page to a level at the end of the list of levels for that student. It could be a never-ending level. But keep track of a metric: maybe, how many lines (or words) the student has typed, and have this reflected in their total star count. This could be logarithmic ... e.g. a star for 50 lines, another for 100 lines, 200, 400, etc.
+  - [ ] Instead of adding JSON to the start of each pre-downloaded file ...
+  - [x] "Reading" practice doesn't seem accurate as a label. All the levels (at least ones with words) involve "reading," but the point is *typing* what you read. What's new about the long-form practice is that it's longer, coherent, real-world text. (It should be more interesting too.) Maybe call it "real life practice"? OK, "fluency practice."
+  - [ ] Add tips about posture and carpal tunnel, e.g. wrists straight, use desk at proper height, etc. Maybe this should be in a "tips" pop-up that is shown upon user request?
+  - [ ] Show reminder at start of long practice to always use correct fingers!
+  - [ ] When cursor is at a word with at least 3 capitals in a row, remind student to use caps lock key.
+    - [ ] we should actually have a dedicated level for learning caps lock, with practice that intermixes lowercase words, initial-cap words, and all-caps.
+  - [ ] Turn off sound for correct keys during fluency practice
+      - [x] I made sound for incorrect key same volume as for correct key, across all modes
+  - [x] wrapping is poor: the lines wrap when they're too wide for the "teleprompter" viewport, and then they wrap again due to the line endings in the file. E.g. in The Princess and the Goblin. These Project Gutenberg books seem to have lines up to 73 characters long. Can we make the viewport wider, and then if the line is still too long, let the viewport scroll horizontally?
+  - [ ] show speed (WPM) on the fluency practice page, not just accuracy. But keep it so that accuracy is more important visually.
+
+- [ ] nit: when the student goes "Back" to the home page, no character is visually highlighted, but the button says "Continue with [character]" instead of "Choose a character to start!" Apparently a character is still selected, so that character should be visually highlighted.
+- [x] **Offline support.** Ensure the app runs fully from a `file://` path with
       no network. Add a local font fallback stack (or bundle fonts) so the
       Google Fonts `<link>` failing offline degrades gracefully. No dynamic data
-      fetching in the core app.
+      fetching in the core app. (This works fine, until you get to the free practice
+      using multiple book-length material. At that point you need https://)
 - [ ] **Code review** covering: security, intuitive UI, code efficiency, and
       code readability. (E.g. the earlier `SORTED_SENTENCES` slip — a reference
       left after its definition was removed — is the kind of thing a review or a

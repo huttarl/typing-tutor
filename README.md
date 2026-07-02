@@ -68,8 +68,7 @@ In case you didn't get here from the GitHub repo, the source code is at
 
 ## Status
 
-In beta. Hosted online (see top of document). I have some more ideas (see [`TO-DO.md`](TO-DO.md)
-but I've stopped working on it for now.
+In beta. Hosted online (see top of document). Being developed occasionally (see [`TO-DO.md`](TO-DO.md)).
 
 ## License
 

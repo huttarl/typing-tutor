@@ -362,6 +362,53 @@ body {
   display: inline-flex; align-items: center; gap: .35rem;
 }
 .pick-footer a:hover { color: var(--accent); text-decoration: underline; }
+
+/* secondary "Fluency practice" button on the home screen */
+.read-btn {
+  display: block; width: 100%; margin-top: .6rem;
+  background: var(--surface); color: var(--accent);
+  border: 2px solid var(--accent); border-radius: var(--radius);
+  padding: .7rem; font-size: 1rem; font-weight: 700; font-family: 'Nunito', sans-serif;
+  cursor: pointer; transition: background .15s;
+}
+.read-btn:hover { background: var(--accent-light); }
+.read-btn:disabled { border-color: var(--border); color: var(--text3); cursor: default; }
+
+/* library picker (reuses the .modal shell) */
+.lib-note { font-size: .82rem; color: var(--text2); margin: .2rem 0; }
+.lib-item {
+  display: flex; align-items: center; gap: .7rem; width: 100%; text-align: left;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  padding: .6rem .8rem; margin-top: .5rem; cursor: pointer; font-family: 'Nunito', sans-serif;
+}
+.lib-item:hover { border-color: var(--accent); background: var(--accent-light); }
+.lib-icon { font-size: 1.4rem; flex-shrink: 0; }
+.lib-text { display: flex; flex-direction: column; flex: 1; }
+.lib-title { font-weight: 700; font-size: .95rem; color: var(--text); }
+.lib-author { font-size: .8rem; color: var(--text2); }
+.lib-status { font-size: .78rem; color: var(--text2); white-space: nowrap; }
+
+/* fluency practice screen (teleprompter). Wide enough for Project Gutenberg's
+   ~73-char lines so each source line stays on one row; if a line is still too
+   wide for the window, the teleprompter scrolls horizontally instead of wrapping. */
+#fluency-screen { padding: 1rem 1.25rem; width: max-content; max-width: 100%; margin: 0 auto; }
+.fluency-topbar { display: flex; align-items: center; gap: .75rem; margin-bottom: .5rem; }
+.fluency-title { flex: 1; text-align: center; font-weight: 800; font-size: 1.05rem; }
+.fluency-meta { display: flex; justify-content: space-between; font-size: .82rem; color: var(--text2); margin-bottom: .5rem; }
+.teleprompter {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  padding: 1.1rem 1.25rem; font-family: 'Nunito Mono', monospace; font-size: 1.2rem; line-height: 1.7;
+  min-height: 230px; width: 76ch; max-width: 100%; overflow-x: auto;
+}
+.tl-line { white-space: pre; min-height: 1.7em; }
+.tl-line.done, .tl-line.up { color: var(--text3); }
+.tl-line.cur { color: var(--text); background: var(--accent-light); border-radius: 6px; }
+.tl-line.cur .ch { color: var(--text2); }
+.tl-line.cur .ch.correct { color: var(--green); }
+.tl-line.cur .ch.wrong { color: var(--red); text-decoration: underline wavy var(--red); }
+.tl-line.cur .ch.cursor { color: var(--text); border-bottom: 3px solid var(--accent); }
+.fluency-hint { text-align: center; font-size: .9rem; color: var(--accent); font-weight: 700; min-height: 1.4em; margin-top: .5rem; }
+#fluency-input { position: absolute; left: -9999px; opacity: 0; }
 </style>
 </head>
 <body>
@@ -372,6 +419,7 @@ body {
   <p class="pick-sub">Who is typing today? Pick your character!</p>
   <div class="avatar-grid" id="avatar-grid"></div>
   <button class="start-btn" id="start-btn" disabled onclick="startLesson()">Choose a character to start!</button>
+  <button class="read-btn" id="read-btn" disabled onclick="startFluency()">📖 Fluency practice</button>
   <p class="save-hint">Your progress is saved under the character you choose. Each student should pick their own character to keep their progress separate.</p>
   <footer class="pick-footer">
     <a href="https://github.com/huttarl/typing-tutor"><tt>// Source code</tt></a>
@@ -408,6 +456,19 @@ body {
       <div class="stat-card" id="level-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div><div class="streak-dots" id="streak-dots"></div></div>
     </div>
   </div>
+</div>
+
+<!-- READING PRACTICE SCREEN (long-form passages from books) -->
+<div id="fluency-screen" class="screen">
+  <div class="fluency-topbar">
+    <button class="back-btn" onclick="exitFluency()">← Back</button>
+    <div class="fluency-title" id="fluency-title"></div>
+    <button class="back-btn" onclick="fluencyRestart()">↻ Restart</button>
+  </div>
+  <div class="fluency-meta"><span id="fluency-progress"></span><span>Accuracy: <b id="fluency-acc">—</b></span></div>
+  <div class="teleprompter" id="teleprompter" onclick="document.getElementById('fluency-input').focus()"></div>
+  <div class="fluency-hint" id="fluency-hint"></div>
+  <input id="fluency-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
 </div>
 
 <div id="modal-mount"></div>
@@ -754,7 +815,7 @@ function playTick(correct) {
     } else {
       o.frequency.value = 220;
       o.type = 'sawtooth';
-      g.gain.setValueAtTime(0.12, ctx.currentTime);
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
     }
     o.start(); o.stop(ctx.currentTime + 0.15);
@@ -835,10 +896,11 @@ function loadState(id) {
       completed: completed,
       stars: parsed.stars || 0,
       streak: parsed.streak || 0,            // consecutive passes toward leveling up
-      birthYear: parsed.birthYear || null   // for the age-based break timer
+      birthYear: parsed.birthYear || null,  // for the age-based break timer
+      fluency: parsed.fluency || { lastBook: null, pos: {} }  // fluency-practice place per book
     };
   }
-  catch(e) { return {level:0,completed:[],stars:0,streak:0,birthYear:null}; }
+  catch(e) { return {level:0,completed:[],stars:0,streak:0,birthYear:null,fluency:{lastBook:null,pos:{}}}; }
 }
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
@@ -852,6 +914,7 @@ function saveProgress() {
     stars: totalStars,
     streak: passStreak,
     birthYear: currentBirthYear,
+    fluency: fluencyState,
   });
 }
 
@@ -906,6 +969,7 @@ function selectChar(id) {
   document.getElementById('card-'+id).classList.add('selected');
   const btn = document.getElementById('start-btn');
   btn.disabled = false;
+  document.getElementById('read-btn').disabled = false;
   const name = ANIMALS.find(a=>a.id===id).name;
   const hasProgress = characterHasProgress(loadState(id));
   btn.textContent = (hasProgress ? 'Continue with ' : 'Start with ') + name + '!';
@@ -944,6 +1008,7 @@ function enterLesson(s) {
   totalStars = s.stars;
   passStreak = s.streak || 0;
   currentBirthYear = s.birthYear;
+  fluencyState = s.fluency || { lastBook: null, pos: {} };
   beginSessionTimer();
   document.getElementById('pick-screen').classList.remove('active');
   document.getElementById('lesson-screen').classList.add('active');
@@ -1030,7 +1095,7 @@ function showExercise(keepPrompt) {   // keepPrompt: re-run the same prompt (Red
 // How many monospace characters fit on ONE line of the prompt box right now.
 // Measured from the live box so it adapts to the window/device width; used to
 // keep generated drills/word-rows from wrapping. (Sentences are fixed text and
-// may still wrap — that's acceptable for reading material.)
+// may still wrap — that's acceptable for fluency material.)
 function promptLineCapacity() {
   const box = document.getElementById('prompt-box');
   if (!box || !box.clientWidth) return 34; // sensible fallback before layout
@@ -1417,6 +1482,11 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeLevelPicker();
     return;
   }
+  if (document.getElementById('fluency-screen').classList.contains('active')) {
+    if (e.key === 'Enter') { e.preventDefault(); fluencyAdvance(); return; }
+    if (e.key !== 'Tab') document.getElementById('fluency-input').focus();
+    return;
+  }
   if (!document.getElementById('lesson-screen').classList.contains('active')) return;
   if (!exerciseActive && e.key === 'Enter') {
     e.preventDefault();
@@ -1600,6 +1670,228 @@ function redoExercise() {
   if (Date.now() < celebrationUntil) return;
   showExercise(true);   // same prompt; counts as a normal attempt
 }
+
+// ── READING PRACTICE (long-form passages) ───────────────────────────────────────
+// Books are fetched from same-origin .txt files at use time (online-only feature).
+// Each file's FIRST line is a JSON config {TextStart, BodyStart} (1-based line
+// numbers, counting that JSON line). We start at BodyStart — the "normal" text,
+// past the title page and any irregular front matter.
+const BOOKS = [
+  {id:'pooh',       title:'Winnie-the-Pooh',             author:'A. A. Milne',      file:'material/pg67098-winnie-the-pooh.txt'},
+  {id:'poohcorner', title:'The House at Pooh Corner',    author:'A. A. Milne',      file:'material/pg73011-house-at-pooh-corner.txt'},
+  {id:'six',        title:'Now We Are Six',              author:'A. A. Milne',      file:'material/pg70516-now-we-are-six.txt'},
+  {id:'princess',   title:'The Princess and the Goblin', author:'George MacDonald', file:'material/pg708-princess-and-goblin.txt'},
+  {id:'moby',       title:'Moby Dick',                   author:'Herman Melville',  file:'material/pg2701-moby-dick.txt'},
+];
+
+let fluencyState = { lastBook: null, pos: {} };  // persisted per character
+let fluencyMode = false;
+let fluencyBook = null;
+let fluencyLines = [];   // normalized body lines (blank lines collapsed to one)
+let fluencyPos = 0;      // index of the line currently being typed
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Flatten typographic characters to ones a learner can type on a normal keyboard.
+// (We deliberately don't try to teach/handle italics, real em dashes, etc. here.)
+function normalizeLine(s) {
+  return s
+    .replace(/\t/g, ' ')
+    .replace(/ /g, ' ')          // non-breaking space
+    .replace(/—/g, '--')         // em dash
+    .replace(/–/g, '-')          // en dash
+    .replace(/[‘’‛]/g, "'")   // curly single quotes
+    .replace(/[“”]/g, '"')  // curly double quotes
+    .replace(/…/g, '...')        // ellipsis
+    .replace(/_/g, '')                // italics markers
+    .replace(/ +/g, ' ')              // collapse runs of spaces
+    .replace(/^\s+|\s+$/g, '');       // trim ends
+}
+
+// Turn a fetched book into an array of typeable lines, starting at BodyStart and
+// stopping at the Gutenberg "*** END OF" footer. Runs of blank lines collapse to one.
+function parseBook(text) {
+  const all = text.split(/\r?\n/);
+  let cfg = {}; try { cfg = JSON.parse(all[0]); } catch(e){}
+  const start = Math.max(0, (cfg.BodyStart || 1) - 1);
+  let end = all.length;
+  for (let i = start; i < all.length; i++) { if (/^\*\*\*\s*END OF/.test(all[i])) { end = i; break; } }
+  const out = []; let lastBlank = false;
+  for (let i = start; i < end; i++) {
+    const n = normalizeLine(all[i]);
+    if (n === '') { if (!lastBlank && out.length) { out.push(''); lastBlank = true; } }
+    else { out.push(n); lastBlank = false; }
+  }
+  while (out.length && out[0] === '') out.shift();
+  while (out.length && out[out.length-1] === '') out.pop();
+  return out;
+}
+
+// Open the library picker (reuses the .modal shell + closeLevelPicker to dismiss).
+function openLibrary() {
+  const items = BOOKS.map(b => {
+    const pos = (fluencyState.pos && fluencyState.pos[b.id]) || 0;
+    const status = pos > 0 ? `resume · line ${pos+1}` : 'start';
+    return `<button class="lib-item" onclick="openBook('${b.id}')">
+      <span class="lib-icon">📖</span>
+      <span class="lib-text"><span class="lib-title">${esc(b.title)}</span><span class="lib-author">${esc(b.author)}</span></span>
+      <span class="lib-status">${status}</span>
+    </button>`;
+  }).join('');
+  document.getElementById('modal-mount').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeLevelPicker()">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">📚 Fluency practice</div>
+          <button class="modal-close" onclick="closeLevelPicker()">✕</button>
+        </div>
+        <p class="lib-note">Type along with a whole book. Your place is saved. (Needs an internet connection.)</p>
+        ${items}
+      </div>`;
+}
+
+async function openBook(id) {
+  const book = BOOKS.find(b => b.id === id);
+  if (!book) return;
+  document.getElementById('modal-mount').innerHTML = '';
+  enterFluency();
+  fluencyBook = book;
+  document.getElementById('fluency-title').textContent = book.title;
+  document.getElementById('teleprompter').innerHTML = '<div class="tl-line up">Loading…</div>';
+  document.getElementById('fluency-hint').textContent = '';
+  try {
+    const res = await fetch(book.file);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    fluencyLines = parseBook(await res.text());
+    fluencyPos = (fluencyState.pos && fluencyState.pos[id]) || 0;
+    if (fluencyPos >= fluencyLines.length) fluencyPos = 0;   // finished last time → start over
+    keystrokes = 0; keyErrors = 0; startTime = null; prevTypedLen = 0;
+    document.getElementById('fluency-input').value = '';
+    fluencyState.lastBook = id; saveProgress();
+    renderFluency();
+    document.getElementById('fluency-input').focus();
+  } catch (e) {
+    document.getElementById('teleprompter').innerHTML =
+      '<div class="tl-line up">Could not load this book. Check your internet connection and try again.</div>';
+  }
+}
+
+function enterFluency() {
+  fluencyMode = true;
+  document.getElementById('pick-screen').classList.remove('active');
+  document.getElementById('lesson-screen').classList.remove('active');
+  document.getElementById('fluency-screen').classList.add('active');
+}
+function exitFluency() {
+  fluencyMode = false;
+  document.getElementById('fluency-screen').classList.remove('active');
+  document.getElementById('pick-screen').classList.add('active');
+  renderAvatarGrid();
+}
+
+// One line of the current line being typed, reusing the .ch styles.
+function renderCurrentLine(text, typed) {
+  let html = text.split('').map((ch, i) => {
+    let cls = 'ch';
+    if (i < typed.length) cls += typed[i] === ch ? ' correct' : ' wrong';
+    else if (i === typed.length) cls += ' cursor';
+    return `<span class="${cls}">${esc(ch)}</span>`;
+  }).join('');
+  if (typed.length >= text.length) html += '<span class="ch cursor">&nbsp;</span>';  // "press Enter" cursor
+  return html;
+}
+
+function renderFluency() {
+  const pct = fluencyLines.length ? Math.round(fluencyPos / fluencyLines.length * 100) : 0;
+  document.getElementById('fluency-progress').textContent =
+    `Line ${fluencyPos+1} of ${fluencyLines.length} · ${pct}%`;
+  const typed = document.getElementById('fluency-input').value;
+  const cur = fluencyLines[fluencyPos] || '';
+  const lines = [];
+  for (let i = fluencyPos - 2; i <= fluencyPos + 4; i++) {
+    if (i < 0 || i >= fluencyLines.length) continue;
+    if (i < fluencyPos)      lines.push(`<div class="tl-line done">${esc(fluencyLines[i]) || '&nbsp;'}</div>`);
+    else if (i === fluencyPos) lines.push(`<div class="tl-line cur">${renderCurrentLine(cur, typed)}</div>`);
+    else                     lines.push(`<div class="tl-line up">${esc(fluencyLines[i]) || '&nbsp;'}</div>`);
+  }
+  const tp = document.getElementById('teleprompter');
+  tp.innerHTML = lines.join('');
+  // If the line is wider than the viewport, scroll so the cursor stays in view.
+  const c = tp.querySelector('.ch.cursor');
+  if (c) {
+    const cr = c.getBoundingClientRect(), tr = tp.getBoundingClientRect();
+    if (cr.right > tr.right - 24) tp.scrollLeft += cr.right - tr.right + 48;
+    else if (cr.left < tr.left + 24) tp.scrollLeft -= (tr.left - cr.left) + 48;
+  }
+  const acc = keystrokes > 0 ? Math.round(((keystrokes - keyErrors) / keystrokes) * 100) : 100;
+  document.getElementById('fluency-acc').textContent = keystrokes ? acc + '%' : '—';
+  const done = typed.length >= cur.length;
+  document.getElementById('fluency-hint').textContent =
+    done ? (cur.length ? 'Press Enter ↵' : 'Blank line — press Enter ↵') : '';
+}
+
+// Enter completes the current line (its newline) and moves to the next.
+function fluencyAdvance() {
+  if (fluencyPos >= fluencyLines.length) return;
+  const cur = fluencyLines[fluencyPos] || '';
+  if (document.getElementById('fluency-input').value.length < cur.length) return;  // line not finished
+  fluencyPos++;
+  document.getElementById('fluency-input').value = '';
+  prevTypedLen = 0;
+  fluencyState.pos[fluencyBook.id] = fluencyPos;
+  saveProgress();
+  if (fluencyPos >= fluencyLines.length) { fluencyFinish(); return; }
+  renderFluency();
+  document.getElementById('fluency-input').focus();
+}
+
+function fluencyFinish() {
+  document.getElementById('teleprompter').innerHTML =
+    `<div class="tl-line cur" style="text-align:center">🎉 You finished ${esc(fluencyBook.title)}!</div>`;
+  document.getElementById('fluency-progress').textContent = `Done · ${fluencyLines.length} lines`;
+  document.getElementById('fluency-hint').textContent = '↻ Restart to read it again, or ← Back for another book.';
+  launchConfetti(2200); playLevelFanfare();
+}
+
+function fluencyRestart() {
+  if (!fluencyBook) return;
+  fluencyPos = 0;
+  keystrokes = 0; keyErrors = 0; startTime = null; prevTypedLen = 0;
+  document.getElementById('fluency-input').value = '';
+  fluencyState.pos[fluencyBook.id] = 0; saveProgress();
+  renderFluency();
+  document.getElementById('fluency-input').focus();
+}
+
+// Entry from the home screen. Load the character's full state first so saveProgress
+// keeps level progress intact while we also persist the fluency place.
+function startFluency() {
+  if (!currentChar) return;
+  const s = loadState(currentChar);
+  levelIndex = s.level; completedLevels = new Set(s.completed); totalStars = s.stars;
+  passStreak = s.streak || 0; currentBirthYear = s.birthYear;
+  fluencyState = s.fluency || { lastBook: null, pos: {} };
+  settings = loadSettings();
+  openLibrary();
+}
+
+document.getElementById('fluency-input').addEventListener('input', function() {
+  if (!fluencyMode) return;
+  const cur = fluencyLines[fluencyPos] || '';
+  let typed = this.value;
+  if (typed.length > cur.length) { typed = typed.slice(0, cur.length); this.value = typed; }  // can't type past the line
+  if (!startTime && typed.length > 0) startTime = Date.now();
+  if (typed.length > prevTypedLen) {
+    for (let i = prevTypedLen; i < typed.length; i++) {
+      keystrokes++;
+      const wrong = typed[i] !== cur[i];
+      if (wrong) keyErrors++;
+      if (i === typed.length - 1) playTick(!wrong);
+    }
+  }
+  prevTypedLen = typed.length;
+  renderFluency();
+});
 
 // ── LEVEL PICKER ───────────────────────────────────────────────────────────────
 let resetConfirmShown = false; // is the in-picker "delete progress?" confirm showing?

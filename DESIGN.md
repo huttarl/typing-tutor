@@ -118,7 +118,8 @@ includes `;`, which the older letter-only filter had dropped).
 ## Progress & persistence
 
 - `localStorage` key `tt2_<characterId>` stores `{ level, completed[], stars,
-  streak, birthYear }`. `completed` is an array of independently-tracked
+  streak, birthYear, fluency }`. `fluency` is `{ lastBook, pos: { <bookId>:
+  lineIndex } }` for the fluency-practice feature. `completed` is an array of independently-tracked
   completed level indices (migrated from an older `maxLevel`-only format on
   load). `streak` is the mastery `passStreak` toward the current level-up (older
   saves used `exercises`; that field is ignored, so the in-level streak just
@@ -192,6 +193,36 @@ includes `;`, which the older letter-only filter had dropped).
 - **Hands** (`drawHand` / `updateHands`) draw two SVG hands; the correct finger
   on the correct hand lights up for the current key. The SVG `viewBox` is
   cropped so the hands aren't clipped and there's no excess whitespace.
+
+## Fluency practice (long-form)
+
+A separate, **online-only** mode (the `#fluency-screen`, decoupled from the level
+system) for typing whole books once the structured levels are done. ("Fluency"
+because the point is *typing* real, coherent, longer text — not just reading it.)
+
+- **Content** is curated and self-hosted, not scraped live (Gutenberg blocks
+  cross-origin `fetch`; a `file://` page can't `fetch` a sibling file either — see
+  TO-DO for the `<script>`-injection workaround). The `BOOKS` table lists
+  same-origin `.txt` files under `material/`. Each file's **first line is a JSON
+  config** `{TextStart, BodyStart}` — 1-based line numbers (counting that JSON
+  line); typing starts at `BodyStart` (past the title page and irregular front
+  matter, which has no reliable marker).
+- `parseBook` slices from `BodyStart` to the Gutenberg `*** END OF` footer,
+  `normalizeLine`s each line (flatten em/en dashes, curly quotes, ellipsis, drop
+  italic underscores and tabs, collapse spaces) so it's typeable on a plain
+  keyboard, and collapses runs of blank lines to one.
+- **Typing is line-by-line**: the student types each line and presses **Enter** for
+  its line break (a blank line is just an Enter), matching transcription. The
+  display is a **teleprompter** — dim done-lines above, the active line (typed
+  green / cursor / muted ahead), dim upcoming lines below. Each source line stays
+  on one row (no wrapping); the teleprompter is sized for Gutenberg's ~73-char
+  lines and scrolls horizontally if a line is wider than the window. Place is saved
+  per book per character (`fluency.pos`).
+- Entry: a "Fluency practice" button on the home screen → a library picker
+  (reuses the modal shell). Finishing a book triggers the level-up celebration.
+- **Deferred** (see TO-DO): chapter jump / "start anywhere", a structured-Bible
+  reference picker, on-screen keyboard/hands, and `file://` support via
+  `<script>`-tag book loading instead of `fetch`.
 
 ## Rendering pattern
 
