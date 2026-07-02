@@ -196,9 +196,15 @@ includes `;`, which the older letter-only filter had dropped).
 
 ## Fluency practice (long-form)
 
-A separate, **online-only** mode (the `#fluency-screen`, decoupled from the level
-system) for typing whole books once the structured levels are done. ("Fluency"
-because the point is *typing* real, coherent, longer text — not just reading it.)
+An **online-only** mode for typing whole books once the structured levels are
+done. ("Fluency" because the point is *typing* real, coherent, longer text — not
+just reading it.) It **shares the `#lesson-screen` layout**: adding the
+`.mode-fluency` class swaps the level-only middle (prompt box, keyboard, hands,
+Level card) for the fluency-only middle (teleprompter, Lines card), while the
+topbar (character name + title + level dropdown), progress bar, reminder banner,
+and Accuracy/WPM cards are shared markup filled by whichever render path is
+active. Elements are tagged `.only-lesson` / `.only-fluency`; `fluencyMode`
+gates the shared keydown/click/focus handlers.
 
 - **Content** is curated and self-hosted, not scraped live (Gutenberg blocks
   cross-origin `fetch`; a `file://` page can't `fetch` a sibling file either — see
@@ -218,8 +224,12 @@ because the point is *typing* real, coherent, longer text — not just reading i
   on one row (no wrapping); the teleprompter is sized for Gutenberg's ~73-char
   lines and scrolls horizontally if a line is wider than the window. Place is saved
   per book per character (`fluency.pos`).
-- Entry: a "Fluency practice" button on the home screen → a library picker
-  (reuses the modal shell). Finishing a book triggers the level-up celebration.
+- Entry: a "Fluency practice" item at the end of the level picker (after the
+  structured levels, unlocked once the last one is complete) → a library picker
+  (reuses the modal shell). Progress is tracked as lines typed, which convert to
+  stars logarithmically (`fluencyStars`: 25 lines → 1★, then each doubling adds
+  one) and count toward the character's total on the avatar grid. Finishing a
+  book triggers the level-up celebration.
 - **Deferred** (see TO-DO): chapter jump / "start anywhere", a structured-Bible
   reference picker, on-screen keyboard/hands, and `file://` support via
   `<script>`-tag book loading instead of `fetch`.

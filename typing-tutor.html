@@ -98,7 +98,18 @@ body {
   color: var(--text2); cursor: pointer; transition: border-color .12s;
 }
 .back-btn:hover { border-color: var(--accent); color: var(--accent); }
-.lesson-title { font-size: 1.1rem; font-weight: 700; flex: 1; }
+.topbar-titles { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: .5rem; }
+.char-name { font-weight: 800; color: var(--accent); white-space: nowrap; }
+.lesson-title { font-size: 1.1rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Mode toggle: the shared #lesson-screen shows level-only parts by default and
+   swaps to fluency-only parts when .mode-fluency is set. */
+#lesson-screen .only-fluency { display: none; }
+#lesson-screen.mode-fluency { max-width: 60rem; }
+#lesson-screen.mode-fluency .only-lesson { display: none; }
+#lesson-screen.mode-fluency .only-fluency { display: block; }
+.prog-caption { font-size: .82rem; color: var(--text2); margin: -.6rem 0 .6rem; }
+.fluency-stars-row { font-size: .95rem; color: var(--accent); margin-top: 4px; min-height: 1em; }
 .level-badge {
   background: var(--accent-light); color: var(--accent);
   border-radius: 99px; padding: .3rem .85rem;
@@ -192,10 +203,6 @@ body {
 /* finger reminder */
 /* Persistent "what this level is for" line — set once per exercise, never
    replaced by the per-keystroke coaching below it. */
-.level-purpose {
-  font-size: 1.05rem; font-weight: 800; color: var(--text);
-  margin-bottom: .7rem; display: flex; align-items: center; gap: .5rem;
-}
 .position-hint {
   background: var(--amber-light);
   border-left: 4px solid var(--amber);
@@ -380,18 +387,6 @@ body {
 /* fluency practice screen (teleprompter). Wide enough for Project Gutenberg's
    ~73-char lines so each source line stays on one row; if a line is still too
    wide for the window, the teleprompter scrolls horizontally instead of wrapping. */
-#fluency-screen { padding: 1rem 1.25rem; width: max-content; max-width: 100%; margin: 0 auto; }
-.fluency-topbar { display: flex; align-items: center; gap: .75rem; margin-bottom: .5rem; }
-.fluency-title { flex: 1; text-align: center; font-weight: 800; font-size: 1.05rem; }
-.fluency-reminder {
-  background: var(--amber-light); border-left: 4px solid var(--amber); border-radius: var(--radius-sm);
-  padding: .5rem .8rem; font-size: .85rem; color: #8a5a00; margin-bottom: .5rem;
-}
-.fluency-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; font-size: .82rem; color: var(--text2); margin-bottom: .5rem; }
-.fluency-stats { display: flex; align-items: baseline; gap: 1rem; }
-.fs-acc { font-size: 1rem; color: var(--text); }
-.fs-acc b { font-size: 1.25rem; color: var(--accent); font-weight: 800; }
-.fs-sub { font-size: .78rem; color: var(--text3); }
 .teleprompter {
   background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
   padding: 1.1rem 1.25rem; font-family: 'Nunito Mono', monospace; font-size: 1.2rem; line-height: 1.7;
@@ -422,57 +417,54 @@ body {
   </footer>
 </div>
 
-<!-- LESSON SCREEN -->
+<!-- LESSON / FLUENCY SCREEN — one shared layout. The .mode-fluency class on
+     #lesson-screen swaps the level-only middle (prompt, keyboard, hands, Level
+     card) for the fluency-only middle (teleprompter, Lines card). The topbar,
+     progress bar, reminder banner, and Accuracy/WPM cards are shared. -->
 <div id="lesson-screen" class="screen">
   <div class="lesson-topbar">
     <button class="back-btn" onclick="goBack()">← Back</button>
-    <div class="lesson-title" id="lesson-title"></div>
+    <div class="topbar-titles">
+      <span class="char-name" id="char-name"></span>
+      <span class="lesson-title" id="lesson-title"></span>
+    </div>
+    <button class="back-btn only-fluency" onclick="fluencyRestart()">↻ Restart</button>
     <button class="level-badge" id="level-badge" onclick="openLevelPicker()"></button>
   </div>
   <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-  <div class="level-purpose" id="level-purpose"></div>
+  <div class="prog-caption only-fluency" id="prog-caption"></div>
   <div id="break-note"></div>
   <div class="position-hint" id="position-hint"></div>
-  <div class="finger-reminder" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span><span class="result-actions"><button class="btn result-redo" id="result-redo-btn" style="display:none" onclick="redoExercise()">↻ Redo</button><button class="btn primary result-next" id="result-next-btn" style="display:none" onclick="nextExercise()">Next →</button></span></div>
-  <div class="prompt-box" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
-  <div class="source-cite" id="source-cite"></div>
+
+  <!-- level-only middle -->
+  <div class="finger-reminder only-lesson" id="finger-reminder"><span class="dot" id="reminder-dot"></span><span id="reminder-text"></span><span class="result-actions"><button class="btn result-redo" id="result-redo-btn" style="display:none" onclick="redoExercise()">↻ Redo</button><button class="btn primary result-next" id="result-next-btn" style="display:none" onclick="nextExercise()">Next →</button></span></div>
+  <div class="prompt-box only-lesson" id="prompt-box" onclick="document.getElementById('typing-input').focus()"></div>
+  <div class="source-cite only-lesson" id="source-cite"></div>
+
+  <!-- fluency-only middle -->
+  <div class="teleprompter only-fluency" id="teleprompter" onclick="document.getElementById('fluency-input').focus()"></div>
+  <div class="fluency-hint only-fluency" id="fluency-hint"></div>
+
   <input id="typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-  <div class="kb-wrap" id="keyboard"></div>
-  <div class="kb-legend" id="kb-legend"></div>
+  <input id="fluency-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+
+  <div class="kb-wrap only-lesson" id="keyboard"></div>
+  <div class="kb-legend only-lesson" id="kb-legend"></div>
+
   <div class="lesson-bottom">
     <div class="stats-side">
       <div class="stat-card" id="stat-acc-card"><div class="stat-label">Accuracy</div><div class="stat-val" id="stat-acc">—</div></div>
       <div class="stat-card hidden-stat" id="stat-wpm-card"><div class="stat-label">WPM</div><div class="stat-val" id="stat-wpm">—</div></div>
     </div>
-    <div class="hands-row">
+    <div class="hands-row only-lesson">
       <svg id="hand-left" width="100" height="118" viewBox="0 38 110 130"></svg>
       <svg id="hand-right" width="100" height="118" viewBox="0 38 110 130" style="transform:scaleX(-1)"></svg>
     </div>
     <div class="stats-side">
-      <div class="stat-card" id="level-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div><div class="streak-dots" id="streak-dots"></div></div>
+      <div class="stat-card only-lesson" id="level-card"><div class="stat-label">Level</div><div class="stat-val" id="stat-level">1</div><div class="streak-dots" id="streak-dots"></div></div>
+      <div class="stat-card only-fluency" id="lines-card"><div class="stat-label">Lines</div><div class="stat-val" id="stat-lines">0</div><div class="fluency-stars-row" id="stat-fluency-stars">0&starf;</div></div>
     </div>
   </div>
-</div>
-
-<!-- FLUENCY PRACTICE SCREEN (long-form passages from books) -->
-<div id="fluency-screen" class="screen">
-  <div class="fluency-topbar">
-    <button class="back-btn" onclick="exitFluency()">← Back</button>
-    <div class="fluency-title" id="fluency-title"></div>
-    <button class="back-btn" onclick="fluencyRestart()">↻ Restart</button>
-  </div>
-  <div class="fluency-reminder">✋ Use the correct fingers for every key — and remember, <b>accuracy matters more than speed</b>.</div>
-  <div class="fluency-meta">
-    <span id="fluency-progress"></span>
-    <span class="fluency-stats">
-      <span class="fs-acc">accuracy <b id="fluency-acc">—</b></span>
-      <span class="fs-sub">wpm <b id="fluency-wpm">—</b></span>
-      <span class="fs-sub">lines <b id="fluency-lines">0</b> · <span id="fluency-stars">0</span>&starf;</span>
-    </span>
-  </div>
-  <div class="teleprompter" id="teleprompter" onclick="document.getElementById('fluency-input').focus()"></div>
-  <div class="fluency-hint" id="fluency-hint"></div>
-  <input id="fluency-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
 </div>
 
 <div id="modal-mount"></div>
@@ -992,7 +984,9 @@ function selectAndStart(id) {
 }
 
 function goBack() {
-  document.getElementById('lesson-screen').classList.remove('active');
+  fluencyMode = false;
+  const ls = document.getElementById('lesson-screen');
+  ls.classList.remove('active', 'mode-fluency');
   document.getElementById('pick-screen').classList.add('active');
   renderAvatarGrid();
 }
@@ -1064,9 +1058,11 @@ function showExercise(keepPrompt) {   // keepPrompt: re-run the same prompt (Red
   const levelIdx = clampedLevelIndex();
   const animal = ANIMALS.find(a=>a.id===currentChar);
 
-  document.getElementById('lesson-title').textContent = animal.emoji + ' ' + animal.name;
+  fluencyMode = false;                                                  // entering a normal exercise leaves fluency mode
+  document.getElementById('lesson-screen').classList.remove('mode-fluency');
+  document.getElementById('char-name').textContent = animal.emoji + ' ' + animal.name;
+  document.getElementById('lesson-title').textContent = '🎯 ' + level.label;
   document.getElementById('level-badge').innerHTML = 'Level ' + (levelIdx+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
-  document.getElementById('level-purpose').textContent = '🎯 ' + level.label;
   document.getElementById('prog-fill').style.width = Math.round((levelIdx / LEVELS.length)*100) + '%';
   document.getElementById('stat-level').textContent = levelIdx+1;
   renderStreak(levelIdx, passStreak);   // dots reflect the current level's streak
@@ -1293,7 +1289,7 @@ function renderFingerReminder(nextChar, level, levelIdx) {
   const inHomeGroup = groupOf(levelIdx) === 'Home row';
   const isLarge = inHomeGroup;
   const isSmall = levelIdx >= 13;   // by the bottom-row group, keep it subtle
-  el.className = 'finger-reminder' + (isLarge ? ' large' : isSmall ? ' small' : '');
+  el.className = 'finger-reminder only-lesson' + (isLarge ? ' large' : isSmall ? ' small' : '');
 
   // Positioning hint — shown only while learning the home row, where it matters most.
   if (inHomeGroup) {
@@ -1490,7 +1486,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeLevelPicker();
     return;
   }
-  if (document.getElementById('fluency-screen').classList.contains('active')) {
+  if (fluencyMode) {
     if (e.key === 'Enter') { e.preventDefault(); fluencyAdvance(); return; }
     if (e.key !== 'Tab') document.getElementById('fluency-input').focus();
     return;
@@ -1506,7 +1502,9 @@ document.addEventListener('keydown', function(e) {
   }
 });
 document.getElementById('lesson-screen').addEventListener('click', function() {
-  if (exerciseActive && !isModalOpen()) document.getElementById('typing-input').focus();
+  if (isModalOpen()) return;
+  if (fluencyMode) document.getElementById('fluency-input').focus();
+  else if (exerciseActive) document.getElementById('typing-input').focus();
 });
 
 function updateLiveStats(typed) {
@@ -1589,7 +1587,7 @@ function completeExercise(typed) {
   // Show the result in the instruction box (no separate result box), with the
   // Next button right after the "Enter or click Next →" hint.
   const el = document.getElementById('finger-reminder');
-  el.className = 'finger-reminder result' + (passed ? ' pass' : '');
+  el.className = 'finger-reminder only-lesson result' + (passed ? ' pass' : '');
   el.style.background = ''; el.style.borderLeft = '';   // clear per-key inline styles so the result class shows
   document.getElementById('reminder-dot').style.display = 'none';
   document.getElementById('reminder-text').innerHTML =
@@ -1768,7 +1766,7 @@ async function openBook(id) {
   document.getElementById('modal-mount').innerHTML = '';
   enterFluency();
   fluencyBook = book;
-  document.getElementById('fluency-title').textContent = book.title;
+  document.getElementById('lesson-title').textContent = '📖 ' + book.title;
   document.getElementById('teleprompter').innerHTML = '<div class="tl-line up">Loading…</div>';
   document.getElementById('fluency-hint').textContent = '';
   try {
@@ -1790,15 +1788,23 @@ async function openBook(id) {
 
 function enterFluency() {
   fluencyMode = true;
+  exerciseActive = false;                                  // not a level exercise (guards the shared click/focus handlers)
   document.getElementById('pick-screen').classList.remove('active');
-  document.getElementById('lesson-screen').classList.remove('active');
-  document.getElementById('fluency-screen').classList.add('active');
-}
-function exitFluency() {
-  fluencyMode = false;
-  document.getElementById('fluency-screen').classList.remove('active');
-  document.getElementById('pick-screen').classList.add('active');
-  renderAvatarGrid();
+  const ls = document.getElementById('lesson-screen');
+  ls.classList.add('active', 'mode-fluency');
+  // Shared header, filled the same way the level path fills it.
+  const animal = ANIMALS.find(a => a.id === currentChar);
+  document.getElementById('char-name').textContent = animal ? animal.emoji + ' ' + animal.name : '';
+  document.getElementById('level-badge').innerHTML =
+    'Level ' + (clampedLevelIndex()+1) + ' of ' + LEVELS.length + ' <span class="caret">▼</span>';
+  document.getElementById('break-note').innerHTML = '';
+  const posEl = document.getElementById('position-hint');
+  posEl.style.display = '';
+  posEl.innerHTML = '✋ Use the correct fingers for every key — and remember, <b>accuracy matters more than speed</b>.';
+  // Fluency is scored on both, but WPM is always shown here (accuracy is styled bigger).
+  document.getElementById('stat-wpm-card').classList.remove('hidden-stat');
+  document.getElementById('stat-acc').textContent = '—';
+  document.getElementById('stat-wpm').textContent = '—';
 }
 
 // One line of the current line being typed, reusing the .ch styles.
@@ -1815,8 +1821,9 @@ function renderCurrentLine(text, typed) {
 
 function renderFluency() {
   const pct = fluencyLines.length ? Math.round(fluencyPos / fluencyLines.length * 100) : 0;
-  document.getElementById('fluency-progress').textContent =
+  document.getElementById('prog-caption').textContent =
     `Line ${fluencyPos+1} of ${fluencyLines.length} · ${pct}%`;
+  document.getElementById('prog-fill').style.width = pct + '%';
   const typed = document.getElementById('fluency-input').value;
   const cur = fluencyLines[fluencyPos] || '';
   const lines = [];
@@ -1836,15 +1843,15 @@ function renderFluency() {
     else if (cr.left < tr.left + 24) tp.scrollLeft -= (tr.left - cr.left) + 48;
   }
   const acc = keystrokes > 0 ? Math.round(((keystrokes - keyErrors) / keystrokes) * 100) : 100;
-  document.getElementById('fluency-acc').textContent = keystrokes ? acc + '%' : '—';
-  // WPM (running; 5 chars = 1 word), shown smaller than accuracy on purpose.
-  // Wait ~2s of typing before showing it, so it doesn't spike on the first keys.
+  document.getElementById('stat-acc').textContent = keystrokes ? acc + '%' : '—';
+  // WPM (running; 5 chars = 1 word). Wait ~2s of typing before showing it, so it
+  // doesn't spike on the first keys.
   const mins = startTime ? (Date.now() - startTime) / 60000 : 0;
-  document.getElementById('fluency-wpm').textContent =
+  document.getElementById('stat-wpm').textContent =
     (keystrokes && mins >= 0.03) ? Math.round((keystrokes / 5) / mins) : '—';
   const nLines = fluencyState.lines || 0;
-  document.getElementById('fluency-lines').textContent = nLines;
-  document.getElementById('fluency-stars').textContent = fluencyStars(nLines);
+  document.getElementById('stat-lines').textContent = nLines;
+  document.getElementById('stat-fluency-stars').innerHTML = fluencyStars(nLines) + '&starf;';
   const done = typed.length >= cur.length;
   document.getElementById('fluency-hint').textContent =
     done ? (cur.length ? 'Press Enter ↵' : 'Blank line — press Enter ↵') : '';
@@ -1874,7 +1881,8 @@ function fluencyAdvance() {
 function fluencyFinish() {
   document.getElementById('teleprompter').innerHTML =
     `<div class="tl-line cur" style="text-align:center">🎉 You finished ${esc(fluencyBook.title)}!</div>`;
-  document.getElementById('fluency-progress').textContent = `Done · ${fluencyLines.length} lines`;
+  document.getElementById('prog-caption').textContent = `Done · ${fluencyLines.length} lines`;
+  document.getElementById('prog-fill').style.width = '100%';
   document.getElementById('fluency-hint').textContent = '↻ Restart to read it again, or ← Back for another book.';
   launchConfetti(2200); playLevelFanfare();
 }
@@ -2041,7 +2049,8 @@ function toggleBreakReminders(isChecked) {
 function closeLevelPicker() {
   resetConfirmShown = false; // next open starts on the plain link, not the confirm
   document.getElementById('modal-mount').innerHTML = '';
-  if (exerciseActive) document.getElementById('typing-input').focus();
+  if (fluencyMode) document.getElementById('fluency-input').focus();
+  else if (exerciseActive) document.getElementById('typing-input').focus();
 }
 
 function jumpToLevel(i) {
