@@ -98,7 +98,7 @@ body {
   color: var(--text2); cursor: pointer; transition: border-color .12s;
 }
 .back-btn:hover { border-color: var(--accent); color: var(--accent); }
-.topbar-titles { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: .5rem; }
+.topbar-titles { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 1.25rem; }  /* space between character name and title */
 .char-name { font-weight: 800; color: var(--accent); white-space: nowrap; }
 .lesson-title { font-size: 1.1rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -260,8 +260,14 @@ body {
 
 /* hands + stats on one row: Accuracy/WPM at left, hands centered, Level/Next at right */
 .lesson-bottom { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; margin: .25rem 0; }
-.hands-row { display: flex; gap: 1.25rem; justify-content: center; }
-.stats-side { display: flex; gap: 10px; align-items: stretch; justify-self: center; }
+.hands-row { display: flex; gap: 1.25rem; justify-content: center; grid-column: 2; }
+/* Explicit columns so the stat groups stay pinned to the outer edges even when
+   the hands (middle column) are hidden in fluency mode. Accuracy/WPM hug the
+   left edge, the Level/Lines card hugs the right edge — both aligned with the
+   content (prompt / teleprompter) edges. */
+.stats-side { display: flex; gap: 10px; align-items: stretch; }
+.lesson-bottom > .stats-side:first-child { grid-column: 1; justify-self: start; }
+.lesson-bottom > .stats-side:last-child  { grid-column: 3; justify-self: end; }
 .stat-card {
   background: var(--surface2); border-radius: var(--radius-sm);
   padding: .5rem .9rem; text-align: center; min-width: 84px;
