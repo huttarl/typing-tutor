@@ -95,8 +95,8 @@ and author. (Not sure if the student should be asked to type these.)
   - [x] "Reading" practice doesn't seem accurate as a label. All the levels (at least ones with words) involve "reading," but the point is *typing* what you read. What's new about the long-form practice is that it's longer, coherent, real-world text. (It should be more interesting too.) Maybe call it "real life practice"? OK, "fluency practice."
   - [ ] Add tips about posture and carpal tunnel, e.g. wrists straight, use desk at proper height, etc. Maybe this should be in a "tips" pop-up that is shown upon user request?
   - [x] Show reminder at start of long practice to always use correct fingers!
-  - [ ] When cursor is at a word with at least 3 capitals in a row, remind student to use caps lock key.
-    - [ ] we should actually have a dedicated level for learning caps lock, with practice that intermixes lowercase words, initial-cap words, and all-caps.
+  - [x] When cursor is at a word with at least 3 capitals in a row, remind student to use caps lock key.
+    - [x] we should actually have a dedicated level for learning caps lock, with practice that intermixes lowercase words, initial-cap words, and all-caps.
   - [x] Turn off sound for correct keys during fluency practice
       - [x] I made sound for incorrect key same volume as for correct key, across all modes
   - [x] wrapping is poor: the lines wrap when they're too wide for the "teleprompter" viewport, and then they wrap again due to the line endings in the file. E.g. in The Princess and the Goblin. These Project Gutenberg books seem to have lines up to 73 characters long. Can we make the viewport wider, and then if the line is still too long, let the viewport scroll horizontally?
@@ -106,7 +106,7 @@ and author. (Not sure if the student should be asked to type these.)
     - [x] use the same Accuracy and WPM display boxes
     - [x] current character name at upper left near "back"
     - [x] In fact the only things from the other levels screen that *shouldn't* be on the fluency practice page are the keyboard diagram with its hands and color legend.
-- [ ] nit: when the student goes "Back" to the home page, no character is visually highlighted, but the button says "Continue with [character]" instead of "Choose a character to start!" Apparently a character is still selected, so that character should be visually highlighted.
+- [x] nit: when the student goes "Back" to the home page, no character is visually highlighted, but the button says "Continue with [character]" instead of "Choose a character to start!" Apparently a character is still selected, so that character should be visually highlighted.
 - [x] **Offline support.** Ensure the app runs fully from a `file://` path with
       no network. Add a local font fallback stack (or bundle fonts) so the
       Google Fonts `<link>` failing offline degrades gracefully. No dynamic data

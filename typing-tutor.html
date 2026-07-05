@@ -965,8 +965,12 @@ function isLevelUnlocked(i) {
 }
 
 // ── AVATAR GRID ───────────────────────────────────────────────────────────────
+// A character counts as "started" once the student has entered their age (which
+// is saved as birthYear), even before finishing a single exercise — so returning
+// to the picker shows it as started, not "New", and won't re-ask the age.
 function characterHasProgress(s) {
-  return (s.completed && s.completed.length > 0) || s.stars > 0 ||
+  return s.birthYear != null ||
+         (s.completed && s.completed.length > 0) || s.stars > 0 ||
          s.level > 0 || (s.streak || 0) > 0;
 }
 
@@ -978,7 +982,8 @@ function renderAvatarGrid() {
     const hasProgress = characterHasProgress(s);
     const totalStars = s.stars + fluencyStars((s.fluency && s.fluency.lines) || 0);
     const progressText = hasProgress ? `Level ${level+1}  (${totalStars}&starf;)` : 'New — not started';
-    return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}" id="card-${a.id}" onclick="selectChar('${a.id}')" ondblclick="selectAndStart('${a.id}')">
+    const selected = a.id === currentChar ? ' selected' : '';   // keep the highlight after returning from a lesson
+    return `<div class="avatar-card${hasProgress ? ' has-progress' : ''}${selected}" id="card-${a.id}" onclick="selectChar('${a.id}')" ondblclick="selectAndStart('${a.id}')">
       <div style="font-size:2.8rem;margin-bottom:6px">${a.emoji}</div>
       <div class="avatar-name">${a.name}</div>
       <div class="avatar-progress">${progressText}</div>
@@ -1011,6 +1016,9 @@ function goBack() {
   ls.classList.remove('active', 'mode-fluency');
   document.getElementById('pick-screen').classList.add('active');
   renderAvatarGrid();
+  // Re-sync the highlight and the Start/Continue button to the character's now
+  // up-to-date progress (e.g. it became "started" once the age was entered).
+  if (currentChar) selectChar(currentChar);
 }
 
 function startLesson() {
