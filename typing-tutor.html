@@ -181,6 +181,20 @@ body {
 .lock-toggle input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
 .lock-hint { font-size: .78rem; color: var(--text2); margin: .4rem .25rem .25rem; }
 .modal-narrow { max-width: 340px; text-align: center; }
+/* Start-point picker: scrollable preview of a book's opening lines. */
+.modal.modal-wide { max-width: 620px; }
+.startpick-preview {
+  max-height: 48vh; overflow-y: auto; margin-top: .5rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface2); padding: .4rem .25rem;
+  font-family: 'Nunito Mono', monospace; font-size: .8rem; line-height: 1.5;
+}
+.pv-line { white-space: pre-wrap; padding: 1px .55rem; border-radius: 4px; cursor: pointer; color: var(--text2); }
+.pv-line:hover { background: var(--accent-light); color: var(--text); }
+.pv-blank { height: .55em; padding: 0; cursor: default; }
+.pv-blank:hover { background: none; }
+.pv-line.selected { background: var(--accent); color: #fff; }
+.pv-line.selected::before { content: '▶ '; font-size: .7em; }
 .age-help { font-size: .88rem; color: var(--text2); line-height: 1.5; margin-bottom: 1.25rem; }
 .age-stepper { display: flex; align-items: center; justify-content: center; gap: 1.25rem; margin-bottom: 1.5rem; }
 .age-btn {
@@ -922,7 +936,8 @@ function loadState(id) {
 }
 function normalizeFluency(f) {
   f = f || {};
-  return { lastBook: f.lastBook || null, pos: f.pos || {}, lines: f.lines || 0 };
+  // `starts` maps bookId → the content-line index the student chose to begin at.
+  return { lastBook: f.lastBook || null, pos: f.pos || {}, starts: f.starts || {}, lines: f.lines || 0 };
 }
 function saveState(id, s) {
   try { localStorage.setItem('tt2_'+id, JSON.stringify(s)); } catch(e){}
@@ -1760,9 +1775,11 @@ function redoExercise() {
 
 // ── READING PRACTICE (long-form passages) ───────────────────────────────────────
 // Books are fetched from same-origin .txt files at use time (online-only feature).
-// Each file's FIRST line is a JSON config {TextStart, BodyStart} (1-based line
-// numbers, counting that JSON line). We start at BodyStart — the "normal" text,
-// past the title page and any irregular front matter.
+// The start of the text is found without any developer-set line number: the PG
+// license markers are stripped automatically, a heuristic guesses where the book
+// proper begins, and the student confirms/adjusts it in a preview picker. Their
+// choice is saved per book (fluencyState.starts). (The files still carry an old
+// JSON metadata line; it's now ignored — bookContent() skips it if unmarked.)
 const BOOKS = [
   {id:'pooh',       title:'Winnie-the-Pooh',             author:'A. A. Milne',      file:'material/pg67098-winnie-the-pooh.txt'},
   {id:'poohcorner', title:'The House at Pooh Corner',    author:'A. A. Milne',      file:'material/pg73011-house-at-pooh-corner.txt'},
@@ -1771,7 +1788,7 @@ const BOOKS = [
   {id:'moby',       title:'Moby Dick',                   author:'Herman Melville',  file:'material/pg2701-moby-dick.txt'},
 ];
 
-let fluencyState = { lastBook: null, pos: {}, lines: 0 };  // persisted per character
+let fluencyState = { lastBook: null, pos: {}, starts: {}, lines: 0 };  // persisted per character
 let fluencyMode = false;
 let fluencyBook = null;
 let fluencyLines = [];   // normalized body lines (blank lines collapsed to one)
@@ -1799,17 +1816,47 @@ function normalizeLine(s) {
     .replace(/^\s+|\s+$/g, '');       // trim ends
 }
 
-// Turn a fetched book into an array of typeable lines, starting at BodyStart and
-// stopping at the Gutenberg "*** END OF" footer. Runs of blank lines collapse to one.
-function parseBook(text) {
+// ── Finding the text to type, without a developer-set line number ──
+// The Project Gutenberg license header/footer are bracketed by standard markers.
+// bookContent() returns the raw lines between them (the "content" region): the
+// book's own material, still including its front matter (title page, contents).
+// The student then picks where the real text begins, aided by suggestStart().
+function bookContent(text) {
   const all = text.split(/\r?\n/);
-  let cfg = {}; try { cfg = JSON.parse(all[0]); } catch(e){}
-  const start = Math.max(0, (cfg.BodyStart || 1) - 1);
-  let end = all.length;
-  for (let i = start; i < all.length; i++) { if (/^\*\*\*\s*END OF/.test(all[i])) { end = i; break; } }
+  let start = -1, end = all.length;
+  // Last START marker (some PG files repeat the header); first END after it.
+  for (let i = 0; i < all.length; i++)
+    if (/^\*\*\*\s*START OF TH(E|IS) PROJECT GUTENBERG/i.test(all[i])) start = i;
+  for (let i = Math.max(start, 0); i < all.length; i++)
+    if (/^\*\*\*\s*END OF/i.test(all[i])) { end = i; break; }
+  // No marker (old file or user-pasted text): skip a leading JSON config line if present.
+  const from = start >= 0 ? start + 1 : (/^\s*\{.*\}\s*$/.test(all[0]) ? 1 : 0);
+  return all.slice(from, end);
+}
+
+// Best guess at where the actual text starts within the content region: the first
+// real chapter/section heading (the keyword avoids matching bare roman numerals in
+// a table of contents), else the first substantial line of prose.
+function suggestStart(lines) {
+  // Keyword + a whole numeral token (roman or digits), on a short line — so it
+  // matches "CHAPTER I" / "CHAPTER 1. Loomings." but not prose like "book is …"
+  // (where "book"+"is" would otherwise look like keyword + roman "i").
+  const heading = /^\s*(chapter|book|part|canto|act|scene)\s+([ivxlcdm]+|\d+)\b/i;
+  for (let i = 0; i < lines.length; i++)
+    if (lines[i].trim().length <= 50 && heading.test(lines[i])) return i;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (l.length >= 45 && /[a-z]/.test(l)) return i;   // a wrapped prose line (not a short/all-caps heading)
+  }
+  return 0;
+}
+
+// Normalize the content region from `fromIndex` onward into typeable lines,
+// collapsing runs of blank lines and trimming blank ends.
+function linesToTypeable(lines, fromIndex) {
   const out = []; let lastBlank = false;
-  for (let i = start; i < end; i++) {
-    const n = normalizeLine(all[i]);
+  for (let i = fromIndex; i < lines.length; i++) {
+    const n = normalizeLine(lines[i]);
     if (n === '') { if (!lastBlank && out.length) { out.push(''); lastBlank = true; } }
     else { out.push(n); lastBlank = false; }
   }
@@ -1836,7 +1883,7 @@ function openLibrary() {
           <div class="modal-title">📚 Fluency practice</div>
           <button class="modal-close" onclick="closeLevelPicker()">✕</button>
         </div>
-        <p class="lib-note">Type along with a whole book. Your place is saved. (Needs an internet connection.)</p>
+        <p class="lib-note">Type along with a whole book. You choose where to begin, and your place is saved. (Needs an internet connection.)</p>
         ${items}
       </div>`;
 }
@@ -1844,27 +1891,83 @@ function openLibrary() {
 async function openBook(id) {
   const book = BOOKS.find(b => b.id === id);
   if (!book) return;
-  document.getElementById('modal-mount').innerHTML = '';
-  enterFluency();
-  fluencyBook = book;
-  document.getElementById('lesson-title').textContent = '📖 ' + book.title;
-  document.getElementById('teleprompter').innerHTML = '<div class="tl-line up">Loading…</div>';
-  document.getElementById('fluency-hint').textContent = '';
+  // Loading note appended to the library modal while we fetch.
+  const modal = document.querySelector('#modal-mount .modal');
+  if (modal && !document.getElementById('lib-loading'))
+    modal.insertAdjacentHTML('beforeend', '<p class="lib-note" id="lib-loading">Loading…</p>');
   try {
     const res = await fetch(book.file);
     if (!res.ok) throw new Error('HTTP ' + res.status);
-    fluencyLines = parseBook(await res.text());
-    fluencyPos = (fluencyState.pos && fluencyState.pos[id]) || 0;
-    if (fluencyPos >= fluencyLines.length) fluencyPos = 0;   // finished last time → start over
-    keystrokes = 0; keyErrors = 0; startTime = null; prevTypedLen = 0;
-    document.getElementById('fluency-input').value = '';
-    fluencyState.lastBook = id; saveProgress();
-    renderFluency();
-    document.getElementById('fluency-input').focus();
+    const content = bookContent(await res.text());
+    const savedStart = fluencyState.starts ? fluencyState.starts[id] : null;
+    const savedPos = (fluencyState.pos && fluencyState.pos[id]) || 0;
+    if (savedStart != null && savedPos > 0) {
+      // Already reading this book — resume where they left off, no picker.
+      document.getElementById('modal-mount').innerHTML = '';
+      beginReading(book, content, savedStart, savedPos);
+    } else {
+      // First time (or not yet started): let them pick where the text begins.
+      openStartPicker(book, content, savedStart != null ? savedStart : suggestStart(content));
+    }
   } catch (e) {
-    document.getElementById('teleprompter').innerHTML =
-      '<div class="tl-line up">Could not load this book. Check your internet connection and try again.</div>';
+    const l = document.getElementById('lib-loading');
+    if (l) l.textContent = 'Could not load this book. Check your connection and try again.';
   }
+}
+
+// Preview the opening of a book and let the student click the line to start on.
+let pickBook = null, pickContent = null, pickIndex = 0;
+function openStartPicker(book, content, suggested) {
+  pickBook = book; pickContent = content; pickIndex = suggested;
+  const cap = Math.max(200, suggested + 40);   // enough to show the suggestion plus context
+  const rows = content.slice(0, cap).map((raw, i) => {
+    const n = normalizeLine(raw);
+    if (n === '') return `<div class="pv-line pv-blank"></div>`;
+    return `<div class="pv-line${i === suggested ? ' selected' : ''}" data-i="${i}" onclick="selectStartLine(${i})">${esc(n)}</div>`;
+  }).join('');
+  document.getElementById('modal-mount').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)openLibrary()">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <div class="modal-title">📖 Where does ${esc(book.title)} begin?</div>
+          <button class="modal-close" onclick="openLibrary()">✕</button>
+        </div>
+        <p class="lib-note">Skip the title page and table of contents. Click the line where the real text starts — usually the first chapter. We've guessed (highlighted); adjust if you like.</p>
+        <div class="startpick-preview" id="startpick-preview">${rows}</div>
+        <button class="btn primary" style="width:100%;margin-top:.75rem" onclick="confirmStartLine()">Start typing here →</button>
+      </div>`;
+  const box = document.getElementById('startpick-preview');
+  const sel = box.querySelector('.pv-line.selected');
+  if (sel) box.scrollTop = Math.max(0, sel.offsetTop - box.clientHeight / 2);
+}
+function selectStartLine(i) {
+  pickIndex = i;
+  const box = document.getElementById('startpick-preview');
+  box.querySelectorAll('.pv-line.selected').forEach(e => e.classList.remove('selected'));
+  const el = box.querySelector(`.pv-line[data-i="${i}"]`);
+  if (el) el.classList.add('selected');
+}
+function confirmStartLine() {
+  if (!pickBook) return;
+  fluencyState.starts[pickBook.id] = pickIndex;
+  fluencyState.pos[pickBook.id] = 0;   // a fresh start point restarts the reading position
+  document.getElementById('modal-mount').innerHTML = '';
+  beginReading(pickBook, pickContent, pickIndex, 0);
+}
+
+// Build the typeable lines from a chosen start and enter the reading screen.
+function beginReading(book, content, fromIndex, resumePos) {
+  fluencyBook = book;
+  fluencyLines = linesToTypeable(content, fromIndex);
+  fluencyPos = resumePos || 0;
+  if (fluencyPos >= fluencyLines.length) fluencyPos = 0;   // finished last time → start over
+  keystrokes = 0; keyErrors = 0; startTime = null; prevTypedLen = 0;
+  enterFluency();
+  document.getElementById('lesson-title').textContent = '📖 ' + book.title;
+  document.getElementById('fluency-input').value = '';
+  fluencyState.lastBook = book.id; saveProgress();
+  renderFluency();
+  document.getElementById('fluency-input').focus();
 }
 
 function enterFluency() {

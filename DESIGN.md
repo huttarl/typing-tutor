@@ -125,7 +125,9 @@ includes `;`, which the older letter-only filter had dropped).
 
 - `localStorage` key `tt2_<characterId>` stores `{ level, completed[], stars,
   streak, birthYear, fluency }`. `fluency` is `{ lastBook, pos: { <bookId>:
-  lineIndex } }` for the fluency-practice feature. `completed` is an array of independently-tracked
+  lineIndex }, starts: { <bookId>: contentLineIndex }, lines }` for the
+  fluency-practice feature (`starts` = the chosen start line per book; `lines` =
+  total lines typed, for the bonus stars). `completed` is an array of independently-tracked
   completed level indices (migrated from an older `maxLevel`-only format on
   load). `streak` is the mastery `passStreak` toward the current level-up (older
   saves used `exercises`; that field is ignored, so the in-level streak just
@@ -215,14 +217,27 @@ gates the shared keydown/click/focus handlers.
 - **Content** is curated and self-hosted, not scraped live (Gutenberg blocks
   cross-origin `fetch`; a `file://` page can't `fetch` a sibling file either — see
   TO-DO for the `<script>`-injection workaround). The `BOOKS` table lists
-  same-origin `.txt` files under `material/`. Each file's **first line is a JSON
-  config** `{TextStart, BodyStart}` — 1-based line numbers (counting that JSON
-  line); typing starts at `BodyStart` (past the title page and irregular front
-  matter, which has no reliable marker).
-- `parseBook` slices from `BodyStart` to the Gutenberg `*** END OF` footer,
-  `normalizeLine`s each line (flatten em/en dashes, curly quotes, ellipsis, drop
-  italic underscores and tabs, collapse spaces) so it's typeable on a plain
-  keyboard, and collapses runs of blank lines to one.
+  same-origin `.txt` files under `material/`.
+- **Finding the start of the text — no developer-set line number.** `bookContent`
+  strips the Project Gutenberg license by taking the lines between the last
+  `*** START OF … PROJECT GUTENBERG …***` marker and the first `*** END OF …***`
+  (falling back to skipping a leading `{…}` JSON line if unmarked — the files still
+  carry an old, now-ignored `{TextStart, BodyStart}` line). `suggestStart` then
+  guesses where the book proper begins: the first short line matching a
+  chapter/section heading (keyword + a *whole* roman/digit numeral token, so
+  "CHAPTER I" matches but prose like "book is…" does not), else the first
+  substantial prose line. The student confirms or adjusts this in a **preview
+  picker** (`openStartPicker`): a scrollable view of the opening lines with the
+  guess highlighted and scrolled into view; clicking a line and "Start typing
+  here" saves the chosen content-line index in `fluency.starts[bookId]`. This
+  removes the per-book manual step and handles the long tail of PG front-matter
+  formatting. `linesToTypeable` then normalizes from the chosen line onward.
+- `normalizeLine` flattens em/en dashes, curly quotes, ellipsis, drops italic
+  underscores and tabs, and collapses spaces so text is typeable on a plain
+  keyboard; runs of blank lines collapse to one, to the `*** END OF` footer.
+- Re-opening a book with saved progress (`fluency.pos[id] > 0`) skips the picker
+  and resumes; otherwise the picker is shown (pre-selected to the saved start, if
+  any).
 - **Typing is line-by-line**: the student types each line and presses **Enter** for
   its line break (a blank line is just an Enter), matching transcription. The
   display is a **teleprompter** — dim done-lines above, the active line (typed
