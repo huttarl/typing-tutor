@@ -6,6 +6,8 @@ just check the box. See [`DESIGN.md`](DESIGN.md) for architecture and rationale.
 
 ## Pedagogy / content
 
+- [ ] quick: when student types two capital letters in a row that are supposed to be lowercase,
+      get their attention about the possibility that the Caps Lock key is on.
 - [ ] Long-form content: Once the student has passed all the exercises about learning
   specific keys, they need more material to practice.
       MVP DONE: "Reading practice" button on the home screen → library picker → teleprompter
